@@ -575,11 +575,13 @@ async function subscribeToHousehold(householdId) {
 async function createHousehold({ name, userName, userEmoji }) {
   const householdId = `DW-${cryptoRandomId()}`;
   const householdRef = doc(db, "households", householdId);
+  const photoData = await readHouseholdPhoto($("createHouseholdPhoto"));
   await setDoc(householdRef, {
     name: name || "Household",
     timezone: TIME_ZONE,
     createdAt: serverTimestamp(),
     lastActivity: serverTimestamp(),
+    photoData: photoData || null,
   });
 
   const userId = cryptoRandomId();
@@ -694,7 +696,8 @@ function render() {
   if (!state.householdId || !state.household) {
     landing.classList.remove("hidden");
     appPanel.classList.add("hidden");
-    $("householdChip").textContent = "No household";
+    $("householdChipText").textContent = "No household";
+    renderHouseholdAvatar(null);
     return;
   }
 
@@ -703,7 +706,8 @@ function render() {
   landing.classList.add("hidden");
   appPanel.classList.remove("hidden");
   $("householdName").textContent = state.household.name;
-  $("householdChip").textContent = `${state.household.name} · ${state.users.length} members`;
+  $("householdChipText").textContent = `${state.household.name} · ${state.users.length} members`;
+  renderHouseholdAvatar(state.household.photoData);
   $("editHouseholdName").value = state.household.name;
   $("joinCodeDisplay").textContent = state.householdId;
   renderQrCode(state.householdId);
@@ -745,7 +749,9 @@ function render() {
     const body = document.createElement("div");
     body.className = "accordion-body";
 
-    for (const chore of choresByCategory[category]) {
+    const chores = choresByCategory[category].slice();
+    chores.sort((a, b) => Number(b.isBundle) - Number(a.isBundle));
+    for (const chore of chores) {
       const lastLog = state.logs
         .filter((log) => log.userId === currentUserId && log.choreId === chore.id)
         .sort((a, b) => toDate(b.loggedAt) - toDate(a.loggedAt))[0];
@@ -1041,6 +1047,35 @@ function renderQrCode(joinCode) {
   });
 }
 
+function renderHouseholdAvatar(photoData) {
+  const img = $("householdAvatar");
+  if (!img) return;
+  if (photoData) {
+    img.src = photoData;
+    img.style.display = "block";
+  } else {
+    img.removeAttribute("src");
+    img.style.display = "none";
+  }
+}
+
+async function readHouseholdPhoto(inputEl) {
+  if (!inputEl || !inputEl.files || inputEl.files.length === 0) return null;
+  const file = inputEl.files[0];
+  if (!file.type.startsWith("image/")) return null;
+  const maxBytes = 350 * 1024;
+  if (file.size > maxBytes) {
+    alert("Please choose an image under 350KB.");
+    return null;
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(null);
+    reader.readAsDataURL(file);
+  });
+}
+
 function setupEvents() {
   populateEmojiSelects();
   populateCategorySelects();
@@ -1065,9 +1100,11 @@ function setupEvents() {
   $("saveHouseholdBtn").addEventListener("click", async () => {
     if (!state.householdId) return;
     const householdRef = doc(db, "households", state.householdId);
+    const photoData = await readHouseholdPhoto($("editHouseholdPhoto"));
     await updateDoc(householdRef, {
       name: $("editHouseholdName").value.trim() || state.household.name,
       lastActivity: serverTimestamp(),
+      ...(photoData ? { photoData } : {}),
     });
   });
 

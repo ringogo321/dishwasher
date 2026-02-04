@@ -104,6 +104,17 @@ body {
   border: 1px solid var(--stroke);
   font-family: "Inter", "Helvetica Neue", sans-serif;
   font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#householdAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: none;
 }
 
 .shell {

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dishwasher v0.23</title>
+    <title>Dishwasher v0.30</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -24,10 +24,13 @@
         <div class="logo">🍽️</div>
         <div>
           <div class="title">Dishwasher</div>
-          <div class="subtitle">v0.23 · Chore League</div>
+          <div class="subtitle">v0.30 · Chore League</div>
         </div>
       </div>
-      <div class="household-chip" id="householdChip">No household</div>
+      <div class="household-chip" id="householdChip">
+        <img id="householdAvatar" alt="" />
+        <span id="householdChipText">No household</span>
+      </div>
     </header>
 
     <main class="shell">
@@ -42,6 +45,10 @@
             <label class="field">
               <span>Household name</span>
               <input id="createHouseholdName" placeholder="The O'Briens" />
+            </label>
+            <label class="field">
+              <span>Household photo</span>
+              <input id="createHouseholdPhoto" type="file" accept="image/*" />
             </label>
             <label class="field">
               <span>Your name</span>
@@ -129,6 +136,10 @@
               <span>Household name</span>
               <input id="editHouseholdName" />
             </label>
+            <label class="field">
+              <span>Household photo</span>
+              <input id="editHouseholdPhoto" type="file" accept="image/*" />
+            </label>
             <div class="row">
               <button id="saveHouseholdBtn" class="btn">Save</button>
               <button id="copyJoinCodeBtn" class="btn">Copy join code</button>
@@ -170,7 +181,7 @@
     </main>
 
     <footer class="footer">
-      <div>Dishwasher v0.23 · IST weekly reset Monday 5:00 AM</div>
+      <div>Dishwasher v0.30 · IST weekly reset Monday 5:00 AM</div>
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
