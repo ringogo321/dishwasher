@@ -452,6 +452,24 @@ function populateCategorySelects() {
   }
 }
 
+function populateRoomSelect() {
+  const target = $("roomSelect");
+  if (!target) return;
+  const current = target.value || "all";
+  target.innerHTML = "";
+  const optionAll = document.createElement("option");
+  optionAll.value = "all";
+  optionAll.textContent = "All rooms";
+  target.appendChild(optionAll);
+  for (const category of CATEGORIES) {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    target.appendChild(option);
+  }
+  target.value = CATEGORIES.includes(current) || current === "all" ? current : "all";
+}
+
 function setState(partial) {
   Object.assign(state, partial);
 }
@@ -628,6 +646,8 @@ function render() {
     return;
   }
 
+  populateRoomSelect();
+
   landing.classList.add("hidden");
   appPanel.classList.remove("hidden");
   $("householdName").textContent = state.household.name;
@@ -649,10 +669,12 @@ function render() {
   const choreList = $("choreList");
   choreList.innerHTML = "";
   const currentUserId = state.currentUserId;
+  const selectedRoom = $("roomSelect")?.value || "all";
   const choresByCategory = {};
   for (const rawChore of state.chores.filter((c) => c.active)) {
     const chore = normalizeChore(rawChore);
     const category = chore.category || "Other";
+    if (selectedRoom !== "all" && category !== selectedRoom) continue;
     if (!choresByCategory[category]) choresByCategory[category] = [];
     choresByCategory[category].push(chore);
   }
@@ -662,10 +684,14 @@ function render() {
     ...Object.keys(choresByCategory).filter((cat) => !CATEGORIES.includes(cat)),
   ];
   orderedCategories.forEach((category) => {
-    const header = document.createElement("div");
-    header.className = "category-title";
-    header.textContent = category;
-    choreList.appendChild(header);
+    const details = document.createElement("details");
+    details.className = "accordion";
+    details.open = selectedRoom === "all" ? false : category === selectedRoom;
+    const summary = document.createElement("summary");
+    summary.innerHTML = `<span>${category}</span><span class="chevron">▾</span>`;
+    details.appendChild(summary);
+    const body = document.createElement("div");
+    body.className = "accordion-body";
 
     for (const chore of choresByCategory[category]) {
       const lastLog = state.logs
@@ -676,10 +702,10 @@ function render() {
       const ready = Date.now() >= cooldownUntil;
 
       const card = document.createElement("div");
-      card.className = "card chore-card";
+      card.className = "mini-card";
       card.innerHTML = `
-        <div class="chore-meta">
-          <div class="chore-title">${chore.emoji || "✨"} ${chore.title}</div>
+        <div class="mini-title">
+          <div>${chore.emoji || "✨"} ${chore.title.replace(/^.*?·\\s*/, "")}</div>
           <div class="point-pill">${chore.isBundle ? "Bundle" : `+${chore.points}`}</div>
         </div>
         <div class="cooldown">Cooldown: ${formatCooldownMinutes(chore.cooldownMinutes)}</div>
@@ -699,8 +725,11 @@ function render() {
         }
       });
       card.appendChild(button);
-      choreList.appendChild(card);
+      body.appendChild(card);
     }
+
+    details.appendChild(body);
+    choreList.appendChild(details);
   });
 
   const { weekStart, scores } = computeWeeklyScores(state.logs);
@@ -958,6 +987,7 @@ function renderQrCode(joinCode) {
 function setupEvents() {
   populateEmojiSelects();
   populateCategorySelects();
+  populateRoomSelect();
 
   $("createHouseholdBtn").addEventListener("click", async () => {
     await createHousehold({
@@ -1042,6 +1072,13 @@ function setupEvents() {
     setLocalHousehold(state.householdId, state.currentUserId);
     render();
   });
+
+  const roomSelect = $("roomSelect");
+  if (roomSelect) {
+    roomSelect.addEventListener("change", () => {
+      render();
+    });
+  }
 
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {

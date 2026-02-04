@@ -316,6 +316,64 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.card.compact {
+  padding: 12px 14px;
+}
+
+.accordion {
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.accordion summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.accordion summary .chevron {
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.accordion[open] summary .chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.mini-card {
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.mini-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
 .chore-card {
   display: grid;
   gap: 8px;
