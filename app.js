@@ -944,8 +944,9 @@ function renderQrCode(joinCode) {
   if (!qrContainer) return;
   qrContainer.innerHTML = "";
   if (!joinCode || typeof QRCode === "undefined") return;
+  const joinUrl = `${window.location.origin}${window.location.pathname}?join=${encodeURIComponent(joinCode)}`;
   new QRCode(qrContainer, {
-    text: joinCode,
+    text: joinUrl,
     width: 160,
     height: 160,
     colorDark: "#0f8b9d",
@@ -1054,6 +1055,16 @@ function setupEvents() {
 }
 
 setupEvents();
+
+function handleJoinLink() {
+  const params = new URLSearchParams(window.location.search);
+  const joinCode = params.get("join");
+  if (!joinCode) return;
+  $("joinCode").value = joinCode;
+  $("joinUserName").focus();
+}
+
+handleJoinLink();
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) return;

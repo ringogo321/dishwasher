@@ -1,13 +1,13 @@
 :root {
-  --bg: #fff1dc;
+  --bg: #fff0e1;
   --ink: #151515;
   --muted: #4f4f4f;
-  --primary: #00a7c5;
-  --accent: #ff6b3d;
-  --sage: #00d4a1;
+  --primary: #ff8a1f;
+  --accent: #ff5c1f;
+  --sage: #ffb454;
   --card: #ffffffea;
-  --stroke: #f1d6c2;
-  --shadow: 0 14px 38px rgba(0, 167, 197, 0.2);
+  --stroke: #f2c7a5;
+  --shadow: 0 14px 38px rgba(255, 122, 31, 0.22);
   --radius: 18px;
 }
 
@@ -41,13 +41,13 @@ body {
 }
 
 .blob-a {
-  background: #ffc56b;
+  background: #ffb34d;
   top: -200px;
   right: -120px;
 }
 
 .blob-b {
-  background: #7fe1ff;
+  background: #ffd1a6;
   bottom: -240px;
   left: -140px;
 }
