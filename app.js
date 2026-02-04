@@ -1068,10 +1068,10 @@ async function readHouseholdPhoto(inputEl) {
     alert("Please choose an image under 1,047,552 bytes (1KB under Firestore max).");
     return null;
   }
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(null);
+    reader.onerror = () => resolve(null);
     reader.readAsDataURL(file);
   });
 }
@@ -1082,11 +1082,16 @@ function setupEvents() {
   populateRoomSelect();
 
   $("createHouseholdBtn").addEventListener("click", async () => {
-    await createHousehold({
-      name: $("createHouseholdName").value.trim(),
-      userName: $("createUserName").value.trim(),
-      userEmoji: $("createUserEmoji").value,
-    });
+    try {
+      await createHousehold({
+        name: $("createHouseholdName").value.trim(),
+        userName: $("createUserName").value.trim(),
+        userEmoji: $("createUserEmoji").value,
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Could not create household. Please try again.");
+    }
   });
 
   $("joinHouseholdBtn").addEventListener("click", async () => {
