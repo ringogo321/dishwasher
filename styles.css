@@ -374,7 +374,7 @@ body {
 .accordion-body {
   padding: 0 16px 16px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .mini-card {
@@ -383,6 +383,48 @@ body {
   padding: 12px;
   display: grid;
   gap: 6px;
+}
+
+.mini-card.needs-doing {
+  border-color: #ff4d1f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 31, 0.15);
+}
+
+.mini-flag {
+  font-size: 12px;
+  color: #ff4d1f;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+.scanner {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: grid;
+  place-items: center;
+  z-index: 10;
+}
+
+.scanner-panel {
+  width: min(520px, 92vw);
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+#scannerVideo {
+  width: 100%;
+  border-radius: 12px;
+  background: #111;
 }
 
 .mini-title {

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dishwasher v0.30</title>
+    <title>Dishwasher v0.32</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -24,7 +24,7 @@
         <div class="logo">🍽️</div>
         <div>
           <div class="title">Dishwasher</div>
-          <div class="subtitle">v0.30 · Chore League</div>
+          <div class="subtitle">v0.32 · Chore League</div>
         </div>
       </div>
       <div class="household-chip" id="householdChip">
@@ -68,9 +68,10 @@
               <div class="qr-box">QR</div>
               <div>
                 <div class="qr-title">Scan QR to join</div>
-                <div class="qr-sub">No scanner in this prototype — paste the join code.</div>
+                <div class="qr-sub">Paste the join code or use the scanner.</div>
               </div>
             </div>
+            <button id="startScannerBtn" class="btn">Scan QR code</button>
             <label class="field">
               <span>Join code</span>
               <input id="joinCode" placeholder="ABCD-1234" />
@@ -166,6 +167,7 @@
               <input id="newChoreTitle" placeholder="Chore title" />
               <input id="newChorePoints" type="number" min="1" placeholder="Points" />
               <input id="newChoreCooldown" placeholder="Cooldown (e.g. 2h, 5d)" />
+              <input id="newChoreNeeds" placeholder="Needs after (e.g. 24h)" />
               <select id="newChoreCategory"></select>
               <select id="newChoreEmoji"></select>
             </div>
@@ -181,10 +183,22 @@
     </main>
 
     <footer class="footer">
-      <div>Dishwasher v0.30 · IST weekly reset Monday 5:00 AM</div>
+      <div>Dishwasher v0.32 · IST weekly reset Monday 5:00 AM</div>
     </footer>
 
+    <div id="scannerModal" class="scanner hidden">
+      <div class="scanner-panel">
+        <div class="scanner-header">
+          <div>Scan join QR</div>
+          <button id="closeScannerBtn" class="btn">Close</button>
+        </div>
+        <video id="scannerVideo" autoplay playsinline></video>
+        <div class="hint">Point the camera at the QR code.</div>
+      </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <script type="module" src="app.js"></script>
   </body>
 </html>

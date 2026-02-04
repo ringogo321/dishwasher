@@ -24,6 +24,7 @@ const DAILY_GOAL = 5;
 const WEEKLY_GOAL = 35;
 const INACTIVITY_DAYS = 30;
 const INACTIVITY_MS = INACTIVITY_DAYS * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const CATEGORIES = [
   "Bathroom",
@@ -31,6 +32,7 @@ const CATEGORIES = [
   "Living room",
   "Bedrooms",
   "Office",
+  "Cooking",
 ];
 
 const firebaseConfig = {
@@ -73,31 +75,36 @@ const CLEANING_EMOJIS = [
 ];
 
 const defaultChores = [
-  { id: cryptoRandomId(), title: "Bathroom · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, emoji: "🧼", active: true, category: "Bathroom", isBundle: true, includes: [] },
-  { id: cryptoRandomId(), title: "Bathroom · Toilet", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🚽", active: true, category: "Bathroom", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Bathroom · Shower", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🚿", active: true, category: "Bathroom", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Bathroom · Sink", points: 1, cooldownMinutes: 24 * 60, emoji: "🧼", active: true, category: "Bathroom", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Bathroom · Floor", points: 2, cooldownMinutes: 3 * 24 * 60, emoji: "🧹", active: true, category: "Bathroom", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, needsAfterMinutes: 7 * 24 * 60, emoji: "🧼", active: true, category: "Bathroom", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Toilet", points: 2, cooldownMinutes: 2 * 24 * 60, needsAfterMinutes: 3 * 24 * 60, emoji: "🚽", active: true, category: "Bathroom", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Shower", points: 2, cooldownMinutes: 2 * 24 * 60, needsAfterMinutes: 3 * 24 * 60, emoji: "🚿", active: true, category: "Bathroom", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Sink", points: 1, cooldownMinutes: 24 * 60, needsAfterMinutes: 2 * 24 * 60, emoji: "🧼", active: true, category: "Bathroom", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Floor", points: 2, cooldownMinutes: 3 * 24 * 60, needsAfterMinutes: 4 * 24 * 60, emoji: "🧹", active: true, category: "Bathroom", isBundle: false, includes: [] },
 
-  { id: cryptoRandomId(), title: "Kitchen · Full clean", points: 0, cooldownMinutes: 3 * 24 * 60, emoji: "🍽️", active: true, category: "Kitchen", isBundle: true, includes: [] },
-  { id: cryptoRandomId(), title: "Kitchen · Load dishwasher", points: 1, cooldownMinutes: 120, emoji: "🍽️", active: true, category: "Kitchen", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Kitchen · Empty dishwasher", points: 1, cooldownMinutes: 120, emoji: "🥣", active: true, category: "Kitchen", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Kitchen · Counters", points: 2, cooldownMinutes: 24 * 60, emoji: "🧽", active: true, category: "Kitchen", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Kitchen · Bins out", points: 2, cooldownMinutes: 24 * 60, emoji: "🗑️", active: true, category: "Kitchen", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Full clean", points: 0, cooldownMinutes: 3 * 24 * 60, needsAfterMinutes: 4 * 24 * 60, emoji: "🍽️", active: true, category: "Kitchen", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Load dishwasher", points: 1, cooldownMinutes: 120, needsAfterMinutes: 12 * 60, emoji: "🍽️", active: true, category: "Kitchen", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Empty dishwasher", points: 1, cooldownMinutes: 120, needsAfterMinutes: 24 * 60, emoji: "🥣", active: true, category: "Kitchen", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Counters", points: 2, cooldownMinutes: 24 * 60, needsAfterMinutes: 2 * 24 * 60, emoji: "🧽", active: true, category: "Kitchen", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Bins out", points: 2, cooldownMinutes: 24 * 60, needsAfterMinutes: 2 * 24 * 60, emoji: "🗑️", active: true, category: "Kitchen", isBundle: false, includes: [] },
 
-  { id: cryptoRandomId(), title: "Living room · Full clean", points: 0, cooldownMinutes: 4 * 24 * 60, emoji: "🧹", active: true, category: "Living room", isBundle: true, includes: [] },
-  { id: cryptoRandomId(), title: "Living room · Vacuum", points: 3, cooldownMinutes: 2 * 24 * 60, emoji: "🧹", active: true, category: "Living room", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Living room · Dusting", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🧽", active: true, category: "Living room", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Living room · Tidy", points: 1, cooldownMinutes: 12 * 60, emoji: "🧺", active: true, category: "Living room", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Living room · Full clean", points: 0, cooldownMinutes: 4 * 24 * 60, needsAfterMinutes: 6 * 24 * 60, emoji: "🧹", active: true, category: "Living room", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Living room · Vacuum", points: 3, cooldownMinutes: 2 * 24 * 60, needsAfterMinutes: 4 * 24 * 60, emoji: "🧹", active: true, category: "Living room", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Living room · Dusting", points: 2, cooldownMinutes: 2 * 24 * 60, needsAfterMinutes: 4 * 24 * 60, emoji: "🧽", active: true, category: "Living room", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Living room · Tidy", points: 1, cooldownMinutes: 12 * 60, needsAfterMinutes: 24 * 60, emoji: "🧺", active: true, category: "Living room", isBundle: false, includes: [] },
 
-  { id: cryptoRandomId(), title: "Bedrooms · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, emoji: "🛏️", active: true, category: "Bedrooms", isBundle: true, includes: [] },
-  { id: cryptoRandomId(), title: "Bedrooms · Make bed", points: 1, cooldownMinutes: 12 * 60, emoji: "🛏️", active: true, category: "Bedrooms", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Bedrooms · Vacuum", points: 2, cooldownMinutes: 3 * 24 * 60, emoji: "🧹", active: true, category: "Bedrooms", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Bedrooms · Laundry", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🧺", active: true, category: "Bedrooms", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bedrooms · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, needsAfterMinutes: 7 * 24 * 60, emoji: "🛏️", active: true, category: "Bedrooms", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Bedrooms · Make bed", points: 1, cooldownMinutes: 12 * 60, needsAfterMinutes: 24 * 60, emoji: "🛏️", active: true, category: "Bedrooms", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bedrooms · Vacuum", points: 2, cooldownMinutes: 3 * 24 * 60, needsAfterMinutes: 5 * 24 * 60, emoji: "🧹", active: true, category: "Bedrooms", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bedrooms · Laundry", points: 2, cooldownMinutes: 2 * 24 * 60, needsAfterMinutes: 3 * 24 * 60, emoji: "🧺", active: true, category: "Bedrooms", isBundle: false, includes: [] },
 
-  { id: cryptoRandomId(), title: "Office · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, emoji: "🧽", active: true, category: "Office", isBundle: true, includes: [] },
-  { id: cryptoRandomId(), title: "Office · Desk wipe", points: 1, cooldownMinutes: 24 * 60, emoji: "🧽", active: true, category: "Office", isBundle: false, includes: [] },
-  { id: cryptoRandomId(), title: "Office · Floor", points: 2, cooldownMinutes: 3 * 24 * 60, emoji: "🧹", active: true, category: "Office", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Office · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, needsAfterMinutes: 7 * 24 * 60, emoji: "🧽", active: true, category: "Office", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Office · Desk wipe", points: 1, cooldownMinutes: 24 * 60, needsAfterMinutes: 3 * 24 * 60, emoji: "🧽", active: true, category: "Office", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Office · Floor", points: 2, cooldownMinutes: 3 * 24 * 60, needsAfterMinutes: 5 * 24 * 60, emoji: "🧹", active: true, category: "Office", isBundle: false, includes: [] },
+
+  { id: cryptoRandomId(), title: "Cooking · Breakfast", points: 2, cooldownMinutes: 8 * 60, needsAfterMinutes: 24 * 60, emoji: "🥞", active: true, category: "Cooking", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Cooking · Brunch", points: 2, cooldownMinutes: 8 * 60, needsAfterMinutes: 24 * 60, emoji: "🍳", active: true, category: "Cooking", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Cooking · Lunch", points: 2, cooldownMinutes: 8 * 60, needsAfterMinutes: 24 * 60, emoji: "🥗", active: true, category: "Cooking", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Cooking · Dinner", points: 3, cooldownMinutes: 8 * 60, needsAfterMinutes: 24 * 60, emoji: "🍝", active: true, category: "Cooking", isBundle: false, includes: [] },
 ];
 
 const state = {
@@ -109,6 +116,8 @@ const state = {
   currentUserId: null,
   uid: null,
   unsubscribers: [],
+  scannerStream: null,
+  scannerActive: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -244,6 +253,11 @@ function formatCooldownMinutes(minutes) {
   return `${Math.round(minutes / (24 * 60))}d`;
 }
 
+function formatNeeds(minutes) {
+  if (!minutes) return "—";
+  return formatCooldownMinutes(minutes);
+}
+
 function timeUntil(timestamp) {
   const diff = Math.max(0, timestamp - Date.now());
   const mins = Math.ceil(diff / 60000);
@@ -260,6 +274,7 @@ function normalizeChore(chore) {
     category: chore.category || "Other",
     isBundle: Boolean(chore.isBundle),
     includes: Array.isArray(chore.includes) ? chore.includes : [],
+    needsAfterMinutes: Number.isFinite(chore.needsAfterMinutes) ? chore.needsAfterMinutes : null,
   };
 }
 
@@ -317,6 +332,7 @@ function ensureChoreSchema(chore, householdRef) {
   if (!chore.category) updates.category = guessCategory(chore.title);
   if (typeof chore.isBundle !== "boolean") updates.isBundle = chore.title.toLowerCase().includes("full");
   if (!Array.isArray(chore.includes)) updates.includes = [];
+  if (typeof chore.needsAfterMinutes !== "number") updates.needsAfterMinutes = null;
   if (Object.keys(updates).length === 0) return;
   updateDoc(doc(householdRef, "chores", chore.id), updates);
 }
@@ -756,17 +772,25 @@ function render() {
         .filter((log) => log.userId === currentUserId && log.choreId === chore.id)
         .sort((a, b) => toDate(b.loggedAt) - toDate(a.loggedAt))[0];
       const lastDate = lastLog ? toDate(lastLog.loggedAt) : null;
+      const dayStart = getDayStartIST(new Date());
+      const loggedToday = lastDate ? lastDate >= dayStart : false;
+      if (loggedToday) continue;
       const cooldownUntil = lastDate ? lastDate.getTime() + chore.cooldownMinutes * 60000 : 0;
       const ready = Date.now() >= cooldownUntil;
+      const needsAfter = chore.needsAfterMinutes;
+      const lastSeen = lastDate || toDate(state.household.createdAt) || new Date();
+      const needsDoing = needsAfter ? Date.now() - lastSeen.getTime() >= needsAfter * 60000 : false;
 
       const card = document.createElement("div");
-      card.className = "mini-card";
+      card.className = `mini-card${needsDoing ? " needs-doing" : ""}`;
       card.innerHTML = `
         <div class="mini-title">
           <div>${chore.emoji || "✨"} ${chore.title.replace(/^.*?·\\s*/, "")}</div>
           <div class="point-pill">${chore.isBundle ? "Bundle" : `+${chore.points}`}</div>
         </div>
         <div class="cooldown">Cooldown: ${formatCooldownMinutes(chore.cooldownMinutes)}</div>
+        <div class="cooldown">Needs after: ${formatNeeds(needsAfter)}</div>
+        ${needsDoing ? `<div class="mini-flag">Needs doing</div>` : ""}
         <div class="cooldown">${ready ? "Available now" : `Ready in ${timeUntil(cooldownUntil)}`}</div>
         ${chore.isBundle ? `<div class="bundle-note">Logs all included chores that are available.</div>` : ""}
       `;
@@ -940,6 +964,7 @@ function render() {
         <input data-title value="${chore.title}" />
         <input data-points type="number" min="1" value="${chore.points}" />
         <input data-cooldown value="${formatCooldownMinutes(chore.cooldownMinutes)}" />
+        <input data-needs value="${formatNeeds(chore.needsAfterMinutes)}" />
         <select data-category></select>
         <select data-emoji></select>
       </div>
@@ -998,6 +1023,7 @@ function render() {
       const title = card.querySelector("[data-title]").value.trim();
       const points = Number(card.querySelector("[data-points]").value.trim());
       const cooldown = parseCooldown(card.querySelector("[data-cooldown]").value.trim());
+      const needsAfter = parseCooldown(card.querySelector("[data-needs]").value.trim());
       const emoji = card.querySelector("[data-emoji]").value;
       const category = card.querySelector("[data-category]").value;
       const isBundle = card.querySelector("[data-bundle]").checked;
@@ -1017,6 +1043,7 @@ function render() {
         category,
         isBundle,
         includes,
+        needsAfterMinutes: needsAfter,
       });
       await touchHousehold(householdRef);
     });
@@ -1158,6 +1185,7 @@ function setupEvents() {
     const title = $("newChoreTitle").value.trim();
     const points = Number($("newChorePoints").value.trim());
     const cooldown = parseCooldown($("newChoreCooldown").value.trim());
+    const needsAfter = parseCooldown($("newChoreNeeds").value.trim());
     const category = $("newChoreCategory").value;
     const isBundle = $("newChoreBundle").checked;
     if (!title || (!isBundle && Number.isNaN(points)) || !cooldown) {
@@ -1173,12 +1201,14 @@ function setupEvents() {
       category,
       isBundle,
       includes: [],
+      needsAfterMinutes: needsAfter,
       active: true,
     });
     await touchHousehold(householdRef);
     $("newChoreTitle").value = "";
     $("newChorePoints").value = "";
     $("newChoreCooldown").value = "";
+    $("newChoreNeeds").value = "";
     $("newChoreBundle").checked = false;
   });
 
@@ -1187,6 +1217,15 @@ function setupEvents() {
     setLocalHousehold(state.householdId, state.currentUserId);
     render();
   });
+
+  const startScannerBtn = $("startScannerBtn");
+  if (startScannerBtn) {
+    startScannerBtn.addEventListener("click", () => startScanner());
+  }
+  const closeScannerBtn = $("closeScannerBtn");
+  if (closeScannerBtn) {
+    closeScannerBtn.addEventListener("click", () => stopScanner());
+  }
 
   const roomSelect = $("roomSelect");
   if (roomSelect) {
@@ -1217,6 +1256,59 @@ function handleJoinLink() {
 }
 
 handleJoinLink();
+
+async function startScanner() {
+  const modal = $("scannerModal");
+  const video = $("scannerVideo");
+  if (!modal || !video) return;
+  modal.classList.remove("hidden");
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    state.scannerStream = stream;
+    state.scannerActive = true;
+    video.srcObject = stream;
+    await video.play();
+    scanFrame(video);
+  } catch (error) {
+    console.error(error);
+    alert("Camera access denied.");
+    stopScanner();
+  }
+}
+
+function stopScanner() {
+  const modal = $("scannerModal");
+  const video = $("scannerVideo");
+  state.scannerActive = false;
+  if (state.scannerStream) {
+    state.scannerStream.getTracks().forEach((track) => track.stop());
+    state.scannerStream = null;
+  }
+  if (video) video.srcObject = null;
+  if (modal) modal.classList.add("hidden");
+}
+
+function scanFrame(video) {
+  if (!state.scannerActive) return;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, imageData.width, imageData.height);
+  if (code?.data) {
+    const value = code.data.trim();
+    const joinCode = value.startsWith("http") ? new URL(value).searchParams.get("join") : value;
+    if (joinCode) {
+      $("joinCode").value = joinCode;
+      stopScanner();
+      $("joinUserName").focus();
+      return;
+    }
+  }
+  requestAnimationFrame(() => scanFrame(video));
+}
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) return;
