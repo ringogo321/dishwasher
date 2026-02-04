@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dishwasher v0.32</title>
+    <title>Dishwasher v0.34</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -24,7 +24,7 @@
         <div class="logo">🍽️</div>
         <div>
           <div class="title">Dishwasher</div>
-          <div class="subtitle">v0.32 · Chore League</div>
+          <div class="subtitle">v0.34 · Chore League</div>
         </div>
       </div>
       <div class="household-chip" id="householdChip">
@@ -72,6 +72,7 @@
               </div>
             </div>
             <button id="startScannerBtn" class="btn">Scan QR code</button>
+            <input id="qrFileInput" type="file" accept="image/*" capture="environment" class="hidden" />
             <label class="field">
               <span>Join code</span>
               <input id="joinCode" placeholder="ABCD-1234" />
@@ -160,6 +161,21 @@
             <button id="addMemberBtn" class="btn">Add member</button>
           </div>
 
+          <div class="section-title">Notifications (preview)</div>
+          <div class="card">
+            <div class="toggle-row">
+              <label class="toggle">
+                <input id="notifyComplete" type="checkbox" />
+                <span>Notify when a chore is completed</span>
+              </label>
+              <label class="toggle">
+                <input id="notifyNeeds" type="checkbox" />
+                <span>Notify when chores need doing</span>
+              </label>
+            </div>
+            <div class="hint">Preferences are saved per member. Push delivery will come later.</div>
+          </div>
+
           <div class="section-title">Chores</div>
           <div id="choreEditList" class="cards"></div>
           <div class="card">
@@ -183,7 +199,7 @@
     </main>
 
     <footer class="footer">
-      <div>Dishwasher v0.32 · IST weekly reset Monday 5:00 AM</div>
+      <div>Dishwasher v0.34 · IST weekly reset Monday 5:00 AM</div>
     </footer>
 
     <div id="scannerModal" class="scanner hidden">

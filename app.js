@@ -738,6 +738,14 @@ function render() {
     userSelect.appendChild(option);
   }
 
+  const currentUser = state.users.find((user) => user.id === state.currentUserId);
+  const notifyComplete = $("notifyComplete");
+  const notifyNeeds = $("notifyNeeds");
+  if (notifyComplete && notifyNeeds && currentUser) {
+    notifyComplete.checked = Boolean(currentUser.notifyComplete);
+    notifyNeeds.checked = Boolean(currentUser.notifyNeeds);
+  }
+
   const choreList = $("choreList");
   choreList.innerHTML = "";
   const currentUserId = state.currentUserId;
@@ -1226,6 +1234,28 @@ function setupEvents() {
   if (closeScannerBtn) {
     closeScannerBtn.addEventListener("click", () => stopScanner());
   }
+  const qrFileInput = $("qrFileInput");
+  if (qrFileInput) {
+    qrFileInput.addEventListener("change", (event) => {
+      scanFile(event.target.files?.[0]);
+    });
+  }
+
+  const notifyComplete = $("notifyComplete");
+  const notifyNeeds = $("notifyNeeds");
+  if (notifyComplete && notifyNeeds) {
+    const updatePrefs = async () => {
+      if (!state.householdId || !state.currentUserId) return;
+      const householdRef = doc(db, "households", state.householdId);
+      await updateDoc(doc(householdRef, "users", state.currentUserId), {
+        notifyComplete: notifyComplete.checked,
+        notifyNeeds: notifyNeeds.checked,
+      });
+      await touchHousehold(householdRef);
+    };
+    notifyComplete.addEventListener("change", updatePrefs);
+    notifyNeeds.addEventListener("change", updatePrefs);
+  }
 
   const roomSelect = $("roomSelect");
   if (roomSelect) {
@@ -1271,8 +1301,9 @@ async function startScanner() {
     scanFrame(video);
   } catch (error) {
     console.error(error);
-    alert("Camera access denied.");
+    alert("Camera access denied. Using photo scan instead.");
     stopScanner();
+    openFileScanner();
   }
 }
 
@@ -1308,6 +1339,39 @@ function scanFrame(video) {
     }
   }
   requestAnimationFrame(() => scanFrame(video));
+}
+
+function openFileScanner() {
+  const input = $("qrFileInput");
+  if (!input) return;
+  input.value = "";
+  input.click();
+}
+
+async function scanFile(file) {
+  if (!file) return;
+  const image = new Image();
+  const url = URL.createObjectURL(file);
+  image.src = url;
+  await image.decode();
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  ctx.drawImage(image, 0, 0);
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, imageData.width, imageData.height);
+  URL.revokeObjectURL(url);
+  if (code?.data) {
+    const value = code.data.trim();
+    const joinCode = value.startsWith("http") ? new URL(value).searchParams.get("join") : value;
+    if (joinCode) {
+      $("joinCode").value = joinCode;
+      $("joinUserName").focus();
+      return;
+    }
+  }
+  alert("Could not read the QR code. Try again.");
 }
 
 onAuthStateChanged(auth, async (user) => {

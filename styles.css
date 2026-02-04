@@ -469,6 +469,24 @@ body {
   gap: 8px;
 }
 
+.toggle-row {
+  display: grid;
+  gap: 10px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+}
+
+.toggle input {
+  width: 16px;
+  height: 16px;
+}
+
 .category-title {
   font-size: 18px;
   margin: 16px 0 10px;
