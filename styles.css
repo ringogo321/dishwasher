@@ -175,6 +175,14 @@ body {
   font-size: 13px;
 }
 
+.field.checkbox {
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
 .field input {
   padding: 10px 12px;
   border-radius: 10px;
@@ -341,6 +349,32 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 8px;
+}
+
+.category-title {
+  font-size: 18px;
+  margin: 16px 0 10px;
+  font-family: "Fraunces", "Georgia", serif;
+}
+
+.bundle-note {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+.include-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.include-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 12px;
 }
 
 .footer {

@@ -21,6 +21,14 @@ const TIME_ZONE = "Europe/Dublin";
 const DAILY_GOAL = 5;
 const WEEKLY_GOAL = 35;
 
+const CATEGORIES = [
+  "Bathroom",
+  "Kitchen",
+  "Living room",
+  "Bedrooms",
+  "Office",
+];
+
 const firebaseConfig = {
   apiKey: "AIzaSyA0tLd4S_2DnHx7LYz8AFsrPXLw4F9jZ2U",
   authDomain: "dishwasher-e03d6.firebaseapp.com",
@@ -56,15 +64,36 @@ const CLEANING_EMOJIS = [
   "🚿",
   "🛁",
   "🚽",
+  "🛏️",
   "🪠",
 ];
 
 const defaultChores = [
-  { id: cryptoRandomId(), title: "Load dishwasher", points: 1, cooldownMinutes: 120, emoji: "🍽️", active: true },
-  { id: cryptoRandomId(), title: "Empty dishwasher", points: 1, cooldownMinutes: 120, emoji: "🥣", active: true },
-  { id: cryptoRandomId(), title: "Bathroom clean", points: 5, cooldownMinutes: 5 * 24 * 60, emoji: "🧼", active: true },
-  { id: cryptoRandomId(), title: "Vacuum lounge", points: 3, cooldownMinutes: 2 * 24 * 60, emoji: "🧹", active: true },
-  { id: cryptoRandomId(), title: "Bins out", points: 2, cooldownMinutes: 24 * 60, emoji: "🗑️", active: true },
+  { id: cryptoRandomId(), title: "Bathroom · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, emoji: "🧼", active: true, category: "Bathroom", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Toilet", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🚽", active: true, category: "Bathroom", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Shower", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🚿", active: true, category: "Bathroom", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Sink", points: 1, cooldownMinutes: 24 * 60, emoji: "🧼", active: true, category: "Bathroom", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bathroom · Floor", points: 2, cooldownMinutes: 3 * 24 * 60, emoji: "🧹", active: true, category: "Bathroom", isBundle: false, includes: [] },
+
+  { id: cryptoRandomId(), title: "Kitchen · Full clean", points: 0, cooldownMinutes: 3 * 24 * 60, emoji: "🍽️", active: true, category: "Kitchen", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Load dishwasher", points: 1, cooldownMinutes: 120, emoji: "🍽️", active: true, category: "Kitchen", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Empty dishwasher", points: 1, cooldownMinutes: 120, emoji: "🥣", active: true, category: "Kitchen", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Counters", points: 2, cooldownMinutes: 24 * 60, emoji: "🧽", active: true, category: "Kitchen", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Kitchen · Bins out", points: 2, cooldownMinutes: 24 * 60, emoji: "🗑️", active: true, category: "Kitchen", isBundle: false, includes: [] },
+
+  { id: cryptoRandomId(), title: "Living room · Full clean", points: 0, cooldownMinutes: 4 * 24 * 60, emoji: "🧹", active: true, category: "Living room", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Living room · Vacuum", points: 3, cooldownMinutes: 2 * 24 * 60, emoji: "🧹", active: true, category: "Living room", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Living room · Dusting", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🧽", active: true, category: "Living room", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Living room · Tidy", points: 1, cooldownMinutes: 12 * 60, emoji: "🧺", active: true, category: "Living room", isBundle: false, includes: [] },
+
+  { id: cryptoRandomId(), title: "Bedrooms · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, emoji: "🛏️", active: true, category: "Bedrooms", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Bedrooms · Make bed", points: 1, cooldownMinutes: 12 * 60, emoji: "🛏️", active: true, category: "Bedrooms", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bedrooms · Vacuum", points: 2, cooldownMinutes: 3 * 24 * 60, emoji: "🧹", active: true, category: "Bedrooms", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Bedrooms · Laundry", points: 2, cooldownMinutes: 2 * 24 * 60, emoji: "🧺", active: true, category: "Bedrooms", isBundle: false, includes: [] },
+
+  { id: cryptoRandomId(), title: "Office · Full clean", points: 0, cooldownMinutes: 5 * 24 * 60, emoji: "🧽", active: true, category: "Office", isBundle: true, includes: [] },
+  { id: cryptoRandomId(), title: "Office · Desk wipe", points: 1, cooldownMinutes: 24 * 60, emoji: "🧽", active: true, category: "Office", isBundle: false, includes: [] },
+  { id: cryptoRandomId(), title: "Office · Floor", points: 2, cooldownMinutes: 3 * 24 * 60, emoji: "🧹", active: true, category: "Office", isBundle: false, includes: [] },
 ];
 
 const state = {
@@ -219,6 +248,34 @@ function timeUntil(timestamp) {
   if (hours < 48) return `${hours}h`;
   const days = Math.ceil(hours / 24);
   return `${days}d`;
+}
+
+function normalizeChore(chore) {
+  return {
+    ...chore,
+    category: chore.category || "Other",
+    isBundle: Boolean(chore.isBundle),
+    includes: Array.isArray(chore.includes) ? chore.includes : [],
+  };
+}
+
+function guessCategory(title = "") {
+  const text = title.toLowerCase();
+  if (text.includes("bathroom")) return "Bathroom";
+  if (text.includes("kitchen") || text.includes("dishwasher")) return "Kitchen";
+  if (text.includes("living") || text.includes("lounge")) return "Living room";
+  if (text.includes("bed")) return "Bedrooms";
+  if (text.includes("office")) return "Office";
+  return "Kitchen";
+}
+
+function ensureChoreSchema(chore, householdRef) {
+  const updates = {};
+  if (!chore.category) updates.category = guessCategory(chore.title);
+  if (typeof chore.isBundle !== "boolean") updates.isBundle = chore.title.toLowerCase().includes("full");
+  if (!Array.isArray(chore.includes)) updates.includes = [];
+  if (Object.keys(updates).length === 0) return;
+  updateDoc(doc(householdRef, "chores", chore.id), updates);
 }
 
 function toDate(value) {
@@ -383,6 +440,18 @@ function populateEmojiSelects() {
   }
 }
 
+function populateCategorySelects() {
+  const target = $("newChoreCategory");
+  if (!target) return;
+  target.innerHTML = "";
+  for (const category of CATEGORIES) {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    target.appendChild(option);
+  }
+}
+
 function setState(partial) {
   Object.assign(state, partial);
 }
@@ -424,6 +493,7 @@ async function subscribeToHousehold(householdId) {
   state.unsubscribers.push(
     onSnapshot(collection(householdRef, "chores"), (snapshot) => {
       const chores = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      chores.forEach((chore) => ensureChoreSchema(chore, householdRef));
       setState({ chores });
       render();
     })
@@ -458,6 +528,13 @@ async function createHousehold({ name, userName, userEmoji }) {
 
   for (const chore of defaultChores) {
     await setDoc(doc(householdRef, "chores", chore.id), chore);
+  }
+
+  for (const chore of defaultChores.filter((c) => c.isBundle)) {
+    const includes = defaultChores
+      .filter((child) => !child.isBundle && child.category === chore.category)
+      .map((child) => child.id);
+    await updateDoc(doc(householdRef, "chores", chore.id), { includes });
   }
 
   setState({ currentUserId: userId });
@@ -497,6 +574,49 @@ async function logChore(chore) {
   });
 }
 
+async function logBundle(bundle) {
+  const includes = Array.isArray(bundle.includes) ? bundle.includes : [];
+  if (!includes.length) {
+    alert("No chores included in this bundle yet. Edit it to choose chores.");
+    return;
+  }
+  const householdRef = doc(db, "households", state.householdId);
+  const now = Date.now();
+  const skipped = [];
+  let loggedCount = 0;
+  for (const childId of includes) {
+    const child = state.chores.find((c) => c.id === childId);
+    if (!child) continue;
+    const lastLog = state.logs
+      .filter((log) => log.userId === state.currentUserId && log.choreId === child.id)
+      .sort((a, b) => toDate(b.loggedAt) - toDate(a.loggedAt))[0];
+    const lastDate = lastLog ? toDate(lastLog.loggedAt) : null;
+    const cooldownUntil = lastDate ? lastDate.getTime() + child.cooldownMinutes * 60000 : 0;
+    if (now < cooldownUntil) {
+      skipped.push(child.title);
+      continue;
+    }
+    await addDoc(collection(householdRef, "logs"), {
+      userId: state.currentUserId,
+      choreId: child.id,
+      points: child.points,
+      loggedAt: serverTimestamp(),
+    });
+    loggedCount += 1;
+  }
+  if (loggedCount > 0) {
+    await addDoc(collection(householdRef, "logs"), {
+      userId: state.currentUserId,
+      choreId: bundle.id,
+      points: 0,
+      loggedAt: serverTimestamp(),
+    });
+  }
+  if (skipped.length) {
+    alert(`Some chores were skipped due to cooldown: ${skipped.join(", ")}`);
+  }
+}
+
 function render() {
   const landing = $("landing");
   const appPanel = $("app");
@@ -529,35 +649,59 @@ function render() {
   const choreList = $("choreList");
   choreList.innerHTML = "";
   const currentUserId = state.currentUserId;
-  for (const chore of state.chores.filter((c) => c.active)) {
-    const lastLog = state.logs
-      .filter((log) => log.userId === currentUserId && log.choreId === chore.id)
-      .sort((a, b) => toDate(b.loggedAt) - toDate(a.loggedAt))[0];
-    const lastDate = lastLog ? toDate(lastLog.loggedAt) : null;
-    const cooldownUntil = lastDate ? lastDate.getTime() + chore.cooldownMinutes * 60000 : 0;
-    const ready = Date.now() >= cooldownUntil;
-
-    const card = document.createElement("div");
-    card.className = "card chore-card";
-    card.innerHTML = `
-      <div class="chore-meta">
-        <div class="chore-title">${chore.emoji || "✨"} ${chore.title}</div>
-        <div class="point-pill">+${chore.points}</div>
-      </div>
-      <div class="cooldown">Cooldown: ${formatCooldownMinutes(chore.cooldownMinutes)}</div>
-      <div class="cooldown">${ready ? "Available now" : `Ready in ${timeUntil(cooldownUntil)}`}</div>
-    `;
-    const button = document.createElement("button");
-    button.className = "btn";
-    button.textContent = ready ? "Log done" : "Cooling down";
-    button.disabled = !ready;
-    button.addEventListener("click", async () => {
-      if (!confirm(`Log ${chore.title}?`)) return;
-      await logChore(chore);
-    });
-    card.appendChild(button);
-    choreList.appendChild(card);
+  const choresByCategory = {};
+  for (const rawChore of state.chores.filter((c) => c.active)) {
+    const chore = normalizeChore(rawChore);
+    const category = chore.category || "Other";
+    if (!choresByCategory[category]) choresByCategory[category] = [];
+    choresByCategory[category].push(chore);
   }
+
+  const orderedCategories = [
+    ...CATEGORIES.filter((cat) => choresByCategory[cat]),
+    ...Object.keys(choresByCategory).filter((cat) => !CATEGORIES.includes(cat)),
+  ];
+  orderedCategories.forEach((category) => {
+    const header = document.createElement("div");
+    header.className = "category-title";
+    header.textContent = category;
+    choreList.appendChild(header);
+
+    for (const chore of choresByCategory[category]) {
+      const lastLog = state.logs
+        .filter((log) => log.userId === currentUserId && log.choreId === chore.id)
+        .sort((a, b) => toDate(b.loggedAt) - toDate(a.loggedAt))[0];
+      const lastDate = lastLog ? toDate(lastLog.loggedAt) : null;
+      const cooldownUntil = lastDate ? lastDate.getTime() + chore.cooldownMinutes * 60000 : 0;
+      const ready = Date.now() >= cooldownUntil;
+
+      const card = document.createElement("div");
+      card.className = "card chore-card";
+      card.innerHTML = `
+        <div class="chore-meta">
+          <div class="chore-title">${chore.emoji || "✨"} ${chore.title}</div>
+          <div class="point-pill">${chore.isBundle ? "Bundle" : `+${chore.points}`}</div>
+        </div>
+        <div class="cooldown">Cooldown: ${formatCooldownMinutes(chore.cooldownMinutes)}</div>
+        <div class="cooldown">${ready ? "Available now" : `Ready in ${timeUntil(cooldownUntil)}`}</div>
+        ${chore.isBundle ? `<div class="bundle-note">Logs all included chores that are available.</div>` : ""}
+      `;
+      const button = document.createElement("button");
+      button.className = "btn";
+      button.textContent = ready ? (chore.isBundle ? "Log full clean" : "Log done") : "Cooling down";
+      button.disabled = !ready;
+      button.addEventListener("click", async () => {
+        if (!confirm(`Log ${chore.title}?`)) return;
+        if (chore.isBundle) {
+          await logBundle(chore);
+        } else {
+          await logChore(chore);
+        }
+      });
+      card.appendChild(button);
+      choreList.appendChild(card);
+    }
+  });
 
   const { weekStart, scores } = computeWeeklyScores(state.logs);
   const dailyScores = computeDailyScores(state.logs);
@@ -693,20 +837,27 @@ function render() {
 
   const choreEditList = $("choreEditList");
   choreEditList.innerHTML = "";
-  for (const chore of state.chores) {
+  for (const rawChore of state.chores) {
+    const chore = normalizeChore(rawChore);
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
       <div class="chore-meta">
         <div class="chore-title">${chore.title}</div>
-        <div class="point-pill">${chore.points} pts</div>
+        <div class="point-pill">${chore.isBundle ? "Bundle" : `${chore.points} pts`}</div>
       </div>
       <div class="row">
         <input data-title value="${chore.title}" />
         <input data-points type="number" min="1" value="${chore.points}" />
         <input data-cooldown value="${formatCooldownMinutes(chore.cooldownMinutes)}" />
+        <select data-category></select>
         <select data-emoji></select>
       </div>
+      <label class="field checkbox">
+        <input data-bundle type="checkbox" ${chore.isBundle ? "checked" : ""} />
+        <span>Full clean bundle</span>
+      </label>
+      <div class="include-list" data-includes></div>
       <div class="row">
         <button class="btn" data-save="${chore.id}">Save</button>
         <button class="btn" data-toggle="${chore.id}">${chore.active ? "Disable" : "Enable"}</button>
@@ -721,21 +872,61 @@ function render() {
       emojiSelect.appendChild(option);
     });
 
+    const categorySelect = card.querySelector("[data-category]");
+    const categoryOptions = CATEGORIES.includes(chore.category)
+      ? CATEGORIES
+      : [...CATEGORIES, chore.category];
+    categoryOptions.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      if (category === chore.category) option.selected = true;
+      categorySelect.appendChild(option);
+    });
+
+    const includesContainer = card.querySelector("[data-includes]");
+    const bundleCheckbox = card.querySelector("[data-bundle]");
+    const buildIncludes = () => {
+      includesContainer.innerHTML = "";
+      if (!bundleCheckbox.checked) return;
+      const sameCategory = state.chores
+        .map((c) => normalizeChore(c))
+        .filter((c) => c.category === categorySelect.value && !c.isBundle);
+      for (const child of sameCategory) {
+        const item = document.createElement("label");
+        item.className = "include-item";
+        const checked = chore.includes?.includes(child.id);
+        item.innerHTML = `<input type="checkbox" value="${child.id}" ${checked ? "checked" : ""} /> ${child.emoji || "✨"} ${child.title}`;
+        includesContainer.appendChild(item);
+      }
+    };
+    buildIncludes();
+    categorySelect.addEventListener("change", buildIncludes);
+    bundleCheckbox.addEventListener("change", buildIncludes);
+
     card.querySelector("[data-save]").addEventListener("click", async () => {
       const title = card.querySelector("[data-title]").value.trim();
       const points = Number(card.querySelector("[data-points]").value.trim());
       const cooldown = parseCooldown(card.querySelector("[data-cooldown]").value.trim());
       const emoji = card.querySelector("[data-emoji]").value;
-      if (!title || Number.isNaN(points) || !cooldown) {
+      const category = card.querySelector("[data-category]").value;
+      const isBundle = card.querySelector("[data-bundle]").checked;
+      const includes = Array.from(includesContainer.querySelectorAll("input[type=checkbox]:checked")).map(
+        (input) => input.value
+      );
+      if (!title || (!isBundle && Number.isNaN(points)) || !cooldown) {
         alert("Please provide a title, points, and cooldown like 2h or 5d.");
         return;
       }
       const householdRef = doc(db, "households", state.householdId);
       await updateDoc(doc(householdRef, "chores", chore.id), {
         title,
-        points,
+        points: isBundle ? 0 : points,
         cooldownMinutes: cooldown,
         emoji,
+        category,
+        isBundle,
+        includes,
       });
     });
 
@@ -765,6 +956,7 @@ function renderQrCode(joinCode) {
 
 function setupEvents() {
   populateEmojiSelects();
+  populateCategorySelects();
 
   $("createHouseholdBtn").addEventListener("click", async () => {
     await createHousehold({
@@ -821,21 +1013,27 @@ function setupEvents() {
     const title = $("newChoreTitle").value.trim();
     const points = Number($("newChorePoints").value.trim());
     const cooldown = parseCooldown($("newChoreCooldown").value.trim());
-    if (!title || Number.isNaN(points) || !cooldown) {
+    const category = $("newChoreCategory").value;
+    const isBundle = $("newChoreBundle").checked;
+    if (!title || (!isBundle && Number.isNaN(points)) || !cooldown) {
       alert("Please provide a title, points, and cooldown like 2h or 5d.");
       return;
     }
     const householdRef = doc(db, "households", state.householdId);
     await setDoc(doc(householdRef, "chores", cryptoRandomId()), {
       title,
-      points,
+      points: isBundle ? 0 : points,
       cooldownMinutes: cooldown,
       emoji: $("newChoreEmoji").value || "✨",
+      category,
+      isBundle,
+      includes: [],
       active: true,
     });
     $("newChoreTitle").value = "";
     $("newChorePoints").value = "";
     $("newChoreCooldown").value = "";
+    $("newChoreBundle").checked = false;
   });
 
   $("userSelect").addEventListener("change", (event) => {

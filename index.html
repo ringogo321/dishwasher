@@ -147,9 +147,15 @@
               <input id="newChoreTitle" placeholder="Chore title" />
               <input id="newChorePoints" type="number" min="1" placeholder="Points" />
               <input id="newChoreCooldown" placeholder="Cooldown (e.g. 2h, 5d)" />
+              <select id="newChoreCategory"></select>
               <select id="newChoreEmoji"></select>
             </div>
+            <label class="field checkbox">
+              <input id="newChoreBundle" type="checkbox" />
+              <span>Full clean bundle (log multiple chores)</span>
+            </label>
             <button id="addChoreBtn" class="btn">Add chore</button>
+            <div class="hint">Tip: add a bundle chore first, then edit it to choose which chores it includes.</div>
           </div>
         </section>
       </section>
