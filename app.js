@@ -1,7 +1,63 @@
-const STORAGE_KEY = "dishwasher.v0.2";
-const TIME_ZONE = "Europe/Dublin";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  addDoc,
+  updateDoc,
+  onSnapshot,
+  serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-const $ = (id) => document.getElementById(id);
+const STORAGE_KEY = "dishwasher.v0.21";
+const TIME_ZONE = "Europe/Dublin";
+const DAILY_GOAL = 5;
+const WEEKLY_GOAL = 35;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA0tLd4S_2DnHx7LYz8AFsrPXLw4F9jZ2U",
+  authDomain: "dishwasher-e03d6.firebaseapp.com",
+  projectId: "dishwasher-e03d6",
+  storageBucket: "dishwasher-e03d6.firebasestorage.app",
+  messagingSenderId: "743352111363",
+  appId: "1:743352111363:web:5e5e5b97788b1c92411936",
+  measurementId: "G-5249P2BFXR",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const CLEANING_EMOJIS = [
+  "🍽️",
+  "🥣",
+  "🧼",
+  "🧹",
+  "🧽",
+  "🧺",
+  "🧻",
+  "🧴",
+  "🪣",
+  "🪥",
+  "🧯",
+  "🧤",
+  "🗑️",
+  "🧊",
+  "🧪",
+  "🧫",
+  "🪟",
+  "🚿",
+  "🛁",
+  "🚽",
+  "🪠",
+];
 
 const defaultChores = [
   { id: cryptoRandomId(), title: "Load dishwasher", points: 1, cooldownMinutes: 120, emoji: "🍽️", active: true },
@@ -11,11 +67,28 @@ const defaultChores = [
   { id: cryptoRandomId(), title: "Bins out", points: 2, cooldownMinutes: 24 * 60, emoji: "🗑️", active: true },
 ];
 
+const state = {
+  householdId: null,
+  household: null,
+  users: [],
+  chores: [],
+  logs: [],
+  currentUserId: null,
+  uid: null,
+  unsubscribers: [],
+};
+
+const $ = (id) => document.getElementById(id);
+
 function cryptoRandomId() {
   return Math.random().toString(36).slice(2, 10).toUpperCase();
 }
 
-function loadData() {
+function saveLocal(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadLocal() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
@@ -25,52 +98,16 @@ function loadData() {
   }
 }
 
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function setLocalHousehold(householdId, currentUserId) {
+  saveLocal({ householdId, currentUserId });
 }
 
-function createHousehold({ name, userName, userEmoji }) {
-  const householdId = `DW-${cryptoRandomId()}`;
-  const userId = cryptoRandomId();
-  const data = {
-    household: {
-      id: householdId,
-      name: name || "Household",
-      timezone: TIME_ZONE,
-      createdAt: Date.now(),
-    },
-    users: [
-      {
-        id: userId,
-        name: userName || "You",
-        emoji: userEmoji || "✨",
-        joinedAt: Date.now(),
-      },
-    ],
-    chores: defaultChores,
-    logs: [],
-    currentUserId: userId,
-  };
-  saveData(data);
-  return data;
+function getLocalHousehold() {
+  return loadLocal();
 }
 
-function joinHousehold({ joinCode, userName, userEmoji }) {
-  const data = loadData();
-  if (!data || data.household.id !== joinCode) {
-    alert("Join code not found on this device.");
-    return null;
-  }
-  const userId = cryptoRandomId();
-  data.users.push({
-    id: userId,
-    name: userName || "Guest",
-    emoji: userEmoji || "✨",
-    joinedAt: Date.now(),
-  });
-  data.currentUserId = userId;
-  saveData(data);
-  return data;
+function clearLocalHousehold() {
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 function formatIST(date) {
@@ -140,6 +177,11 @@ function getWeekStartIST(date) {
   return weekStart;
 }
 
+function getDayStartIST(date) {
+  const parts = getDatePartsInTZ(date, TIME_ZONE);
+  return zonedTimeToUtc(parts.year, parts.month, parts.day, 0, 0, 0, TIME_ZONE);
+}
+
 function getWeekKey(date) {
   return getWeekStartIST(date).toISOString();
 }
@@ -179,19 +221,42 @@ function timeUntil(timestamp) {
   return `${days}d`;
 }
 
-function computeWeeklyScores(data) {
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value.toDate === "function") return value.toDate();
+  return new Date(value);
+}
+
+function computeWeeklyScores(logs) {
   const weekKey = getWeekKey(new Date());
   const weekStart = new Date(weekKey);
   const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
   const scores = new Map();
-  for (const user of data.users) scores.set(user.id, 0);
-  for (const log of data.logs) {
-    const loggedAt = new Date(log.loggedAt);
+  for (const user of state.users) scores.set(user.id, 0);
+  for (const log of logs) {
+    const loggedAt = toDate(log.loggedAt);
+    if (!loggedAt) continue;
     if (loggedAt >= weekStart && loggedAt < weekEnd) {
       scores.set(log.userId, (scores.get(log.userId) || 0) + log.points);
     }
   }
   return { weekStart, scores };
+}
+
+function computeDailyScores(logs) {
+  const dayStart = getDayStartIST(new Date());
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  const scores = new Map();
+  for (const user of state.users) scores.set(user.id, 0);
+  for (const log of logs) {
+    const loggedAt = toDate(log.loggedAt);
+    if (!loggedAt) continue;
+    if (loggedAt >= dayStart && loggedAt < dayEnd) {
+      scores.set(log.userId, (scores.get(log.userId) || 0) + log.points);
+    }
+  }
+  return { dayStart, scores };
 }
 
 function computeWeeklyAwards(scores) {
@@ -214,11 +279,12 @@ function computeWeeklyAwards(scores) {
   return awards;
 }
 
-function computeYearlyLeague(data) {
+function computeYearlyLeague(logs) {
   const year = getDatePartsInTZ(new Date(), TIME_ZONE).year;
   const weeklyBuckets = new Map();
-  for (const log of data.logs) {
-    const logDate = new Date(log.loggedAt);
+  for (const log of logs) {
+    const logDate = toDate(log.loggedAt);
+    if (!logDate) continue;
     const logYear = getDatePartsInTZ(logDate, TIME_ZONE).year;
     if (logYear !== year) continue;
     const key = getWeekKey(logDate);
@@ -228,9 +294,9 @@ function computeYearlyLeague(data) {
   }
 
   const leaguePoints = new Map();
-  for (const user of data.users) leaguePoints.set(user.id, 0);
+  for (const user of state.users) leaguePoints.set(user.id, 0);
   for (const bucket of weeklyBuckets.values()) {
-    for (const user of data.users) {
+    for (const user of state.users) {
       if (!bucket.has(user.id)) bucket.set(user.id, 0);
     }
     const weeklyAwards = computeWeeklyAwards(bucket);
@@ -242,10 +308,11 @@ function computeYearlyLeague(data) {
   return { year, leaguePoints };
 }
 
-function computeMonthlyBadges(data) {
+function computeMonthlyBadges(logs) {
   const monthBuckets = new Map();
-  for (const log of data.logs) {
-    const logDate = new Date(log.loggedAt);
+  for (const log of logs) {
+    const logDate = toDate(log.loggedAt);
+    if (!logDate) continue;
     const monthKey = getMonthKey(logDate);
     if (!monthBuckets.has(monthKey)) monthBuckets.set(monthKey, new Map());
     const bucket = monthBuckets.get(monthKey);
@@ -263,42 +330,211 @@ function computeMonthlyBadges(data) {
   return badges;
 }
 
+function computeDailyStreaks(logs) {
+  const streaks = new Map();
+  const byUser = new Map();
+  for (const user of state.users) byUser.set(user.id, []);
+  for (const log of logs) {
+    const logDate = toDate(log.loggedAt);
+    if (!logDate) continue;
+    byUser.get(log.userId)?.push(logDate);
+  }
+  for (const [userId, dates] of byUser.entries()) {
+    if (!dates.length) {
+      streaks.set(userId, 0);
+      continue;
+    }
+    dates.sort((a, b) => a - b);
+    let streak = 0;
+    let dayPointer = getDayStartIST(new Date());
+    for (;;) {
+      const dayEnd = new Date(dayPointer.getTime() + 24 * 60 * 60 * 1000);
+      const dayPoints = logs
+        .filter((log) => log.userId === userId)
+        .reduce((sum, log) => {
+          const logDate = toDate(log.loggedAt);
+          if (logDate >= dayPointer && logDate < dayEnd) return sum + log.points;
+          return sum;
+        }, 0);
+      if (dayPoints >= DAILY_GOAL) {
+        streak += 1;
+        dayPointer = new Date(dayPointer.getTime() - 24 * 60 * 60 * 1000);
+      } else {
+        break;
+      }
+    }
+    streaks.set(userId, streak);
+  }
+  return streaks;
+}
+
+function populateEmojiSelects() {
+  const targets = ["createUserEmoji", "joinUserEmoji", "newMemberEmoji", "newChoreEmoji"];
+  for (const id of targets) {
+    const select = $(id);
+    if (!select) continue;
+    select.innerHTML = "";
+    for (const emoji of CLEANING_EMOJIS) {
+      const option = document.createElement("option");
+      option.value = emoji;
+      option.textContent = emoji;
+      select.appendChild(option);
+    }
+  }
+}
+
+function setState(partial) {
+  Object.assign(state, partial);
+}
+
+function resetSubscriptions() {
+  state.unsubscribers.forEach((unsub) => unsub());
+  state.unsubscribers = [];
+}
+
+async function subscribeToHousehold(householdId) {
+  resetSubscriptions();
+  const householdRef = doc(db, "households", householdId);
+  const householdSnap = await getDoc(householdRef);
+  if (!householdSnap.exists()) {
+    alert("Household not found.");
+    clearLocalHousehold();
+    return;
+  }
+
+  setState({ householdId, household: { id: householdId, ...householdSnap.data() } });
+
+  state.unsubscribers.push(
+    onSnapshot(collection(householdRef, "users"), (snapshot) => {
+      const users = snapshot.docs
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+        .filter((user) => user.active !== false);
+      setState({ users });
+      if (!state.currentUserId && state.uid) {
+        const existing = users.find((u) => u.authUid === state.uid);
+        if (existing) state.currentUserId = existing.id;
+      }
+      if (state.currentUserId && !users.find((u) => u.id === state.currentUserId)) {
+        state.currentUserId = users[0]?.id || null;
+      }
+      render();
+    })
+  );
+
+  state.unsubscribers.push(
+    onSnapshot(collection(householdRef, "chores"), (snapshot) => {
+      const chores = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      setState({ chores });
+      render();
+    })
+  );
+
+  state.unsubscribers.push(
+    onSnapshot(collection(householdRef, "logs"), (snapshot) => {
+      const logs = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      setState({ logs });
+      render();
+    })
+  );
+}
+
+async function createHousehold({ name, userName, userEmoji }) {
+  const householdId = `DW-${cryptoRandomId()}`;
+  const householdRef = doc(db, "households", householdId);
+  await setDoc(householdRef, {
+    name: name || "Household",
+    timezone: TIME_ZONE,
+    createdAt: serverTimestamp(),
+  });
+
+  const userId = cryptoRandomId();
+  await setDoc(doc(householdRef, "users", userId), {
+    name: userName || "You",
+    emoji: userEmoji || "✨",
+    joinedAt: serverTimestamp(),
+    authUid: state.uid,
+    active: true,
+  });
+
+  for (const chore of defaultChores) {
+    await setDoc(doc(householdRef, "chores", chore.id), chore);
+  }
+
+  setState({ currentUserId: userId });
+  setLocalHousehold(householdId, userId);
+  await subscribeToHousehold(householdId);
+}
+
+async function joinHousehold({ joinCode, userName, userEmoji }) {
+  const householdRef = doc(db, "households", joinCode);
+  const snap = await getDoc(householdRef);
+  if (!snap.exists()) {
+    alert("Join code not found.");
+    return;
+  }
+
+  const userId = cryptoRandomId();
+  await setDoc(doc(householdRef, "users", userId), {
+    name: userName || "Guest",
+    emoji: userEmoji || "✨",
+    joinedAt: serverTimestamp(),
+    authUid: state.uid,
+    active: true,
+  });
+
+  setState({ currentUserId: userId });
+  setLocalHousehold(joinCode, userId);
+  await subscribeToHousehold(joinCode);
+}
+
+async function logChore(chore) {
+  const householdRef = doc(db, "households", state.householdId);
+  await addDoc(collection(householdRef, "logs"), {
+    userId: state.currentUserId,
+    choreId: chore.id,
+    points: chore.points,
+    loggedAt: serverTimestamp(),
+  });
+}
+
 function render() {
-  const data = loadData();
   const landing = $("landing");
-  const app = $("app");
-  if (!data) {
+  const appPanel = $("app");
+
+  if (!state.householdId || !state.household) {
     landing.classList.remove("hidden");
-    app.classList.add("hidden");
+    appPanel.classList.add("hidden");
     $("householdChip").textContent = "No household";
     return;
   }
 
   landing.classList.add("hidden");
-  app.classList.remove("hidden");
-  $("householdName").textContent = data.household.name;
-  $("householdChip").textContent = `${data.household.name} · ${data.users.length} members`;
-  $("editHouseholdName").value = data.household.name;
-  $("joinCodeDisplay").textContent = data.household.id;
+  appPanel.classList.remove("hidden");
+  $("householdName").textContent = state.household.name;
+  $("householdChip").textContent = `${state.household.name} · ${state.users.length} members`;
+  $("editHouseholdName").value = state.household.name;
+  $("joinCodeDisplay").textContent = state.householdId;
+  renderQrCode(state.householdId);
 
   const userSelect = $("userSelect");
   userSelect.innerHTML = "";
-  for (const user of data.users) {
+  for (const user of state.users) {
     const option = document.createElement("option");
     option.value = user.id;
     option.textContent = `${user.emoji || "✨"} ${user.name}`;
-    if (user.id === data.currentUserId) option.selected = true;
+    if (user.id === state.currentUserId) option.selected = true;
     userSelect.appendChild(option);
   }
 
   const choreList = $("choreList");
   choreList.innerHTML = "";
-  const currentUserId = data.currentUserId;
-  for (const chore of data.chores.filter((c) => c.active)) {
-    const lastLog = data.logs
+  const currentUserId = state.currentUserId;
+  for (const chore of state.chores.filter((c) => c.active)) {
+    const lastLog = state.logs
       .filter((log) => log.userId === currentUserId && log.choreId === chore.id)
-      .sort((a, b) => b.loggedAt - a.loggedAt)[0];
-    const cooldownUntil = lastLog ? lastLog.loggedAt + chore.cooldownMinutes * 60000 : 0;
+      .sort((a, b) => toDate(b.loggedAt) - toDate(a.loggedAt))[0];
+    const lastDate = lastLog ? toDate(lastLog.loggedAt) : null;
+    const cooldownUntil = lastDate ? lastDate.getTime() + chore.cooldownMinutes * 60000 : 0;
     const ready = Date.now() >= cooldownUntil;
 
     const card = document.createElement("div");
@@ -315,48 +551,57 @@ function render() {
     button.className = "btn";
     button.textContent = ready ? "Log done" : "Cooling down";
     button.disabled = !ready;
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       if (!confirm(`Log ${chore.title}?`)) return;
-      data.logs.push({
-        id: cryptoRandomId(),
-        userId: currentUserId,
-        choreId: chore.id,
-        loggedAt: Date.now(),
-        points: chore.points,
-      });
-      saveData(data);
-      render();
+      await logChore(chore);
     });
     card.appendChild(button);
     choreList.appendChild(card);
   }
 
-  const { weekStart, scores } = computeWeeklyScores(data);
+  const { weekStart, scores } = computeWeeklyScores(state.logs);
+  const dailyScores = computeDailyScores(state.logs);
   const weeklyAwards = computeWeeklyAwards(scores);
+  const dailyStreaks = computeDailyStreaks(state.logs);
+
   const weeklyLeague = $("weeklyLeague");
   weeklyLeague.innerHTML = "";
-  const weeklyEntries = data.users.map((user) => ({
+  const weeklyEntries = state.users.map((user) => ({
     user,
     score: scores.get(user.id) || 0,
     award: weeklyAwards.get(user.id) || 0,
+    daily: dailyScores.scores.get(user.id) || 0,
+    streak: dailyStreaks.get(user.id) || 0,
   }));
   weeklyEntries.sort((a, b) => b.score - a.score);
   for (const entry of weeklyEntries) {
     const card = document.createElement("div");
-    card.className = "card league-row";
+    card.className = "card league-stack";
+    const dailyPct = Math.min(100, Math.round((entry.daily / DAILY_GOAL) * 100));
+    const weeklyPct = Math.min(100, Math.round((entry.score / WEEKLY_GOAL) * 100));
     card.innerHTML = `
-      <div>${entry.user.emoji || "✨"} ${entry.user.name}</div>
-      <div>${entry.score} pts · +${entry.award} league</div>
+      <div class="league-row">
+        <div>${entry.user.emoji || "✨"} ${entry.user.name}</div>
+        <div>${entry.score} pts · +${entry.award} league</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label">Daily goal ${entry.daily}/${DAILY_GOAL} · Streak ${entry.streak} days 🔥</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${dailyPct}%"></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label">Weekly goal ${entry.score}/${WEEKLY_GOAL}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${weeklyPct}%"></div></div>
+      </div>
     `;
     weeklyLeague.appendChild(card);
   }
 
   $("weekMeta").textContent = `Week starts ${formatIST(weekStart)} · resets Monday 5:00 AM IST`;
 
-  const yearly = computeYearlyLeague(data);
+  const yearly = computeYearlyLeague(state.logs);
   const yearlyLeague = $("yearlyLeague");
   yearlyLeague.innerHTML = "";
-  const yearlyEntries = data.users.map((user) => ({
+  const yearlyEntries = state.users.map((user) => ({
     user,
     score: yearly.leaguePoints.get(user.id) || 0,
   }));
@@ -373,12 +618,12 @@ function render() {
 
   const badgesGrid = $("badgesGrid");
   badgesGrid.innerHTML = "";
-  const monthlyBadges = computeMonthlyBadges(data);
+  const monthlyBadges = computeMonthlyBadges(state.logs);
   if (monthlyBadges.length === 0) {
     badgesGrid.innerHTML = `<div class="card">Log chores to earn badges.</div>`;
   } else {
     for (const badge of monthlyBadges) {
-      const user = data.users.find((u) => u.id === badge.userId);
+      const user = state.users.find((u) => u.id === badge.userId);
       const card = document.createElement("div");
       card.className = "card badge";
       card.innerHTML = `
@@ -406,115 +651,173 @@ function render() {
 
   const memberList = $("memberList");
   memberList.innerHTML = "";
-  for (const user of data.users) {
+  for (const user of state.users) {
     const card = document.createElement("div");
-    card.className = "card league-row";
+    card.className = "card";
     card.innerHTML = `
-      <div>${user.emoji || "✨"} ${user.name}</div>
-      <div>
+      <div class="row">
+        <input data-name value="${user.name}" />
+        <select data-emoji></select>
+      </div>
+      <div class="row">
+        <button class="btn" data-save="${user.id}">Save</button>
         <button class="btn" data-remove="${user.id}">Remove</button>
       </div>
     `;
-    card.querySelector("button").addEventListener("click", () => {
-      if (data.users.length === 1) return alert("At least one member required.");
-      data.users = data.users.filter((u) => u.id !== user.id);
-      if (data.currentUserId === user.id) data.currentUserId = data.users[0].id;
-      saveData(data);
-      render();
+    const emojiSelect = card.querySelector("[data-emoji]");
+    CLEANING_EMOJIS.forEach((emoji) => {
+      const option = document.createElement("option");
+      option.value = emoji;
+      option.textContent = emoji;
+      if (emoji === user.emoji) option.selected = true;
+      emojiSelect.appendChild(option);
+    });
+
+    card.querySelector("[data-save]").addEventListener("click", async () => {
+      const name = card.querySelector("[data-name]").value.trim();
+      const emoji = card.querySelector("[data-emoji]").value;
+      if (!name) return;
+      const householdRef = doc(db, "households", state.householdId);
+      await updateDoc(doc(householdRef, "users", user.id), { name, emoji });
+      if (state.currentUserId === user.id) {
+        setLocalHousehold(state.householdId, state.currentUserId);
+      }
+    });
+    card.querySelector("[data-remove]").addEventListener("click", async () => {
+      if (state.users.length === 1) return alert("At least one member required.");
+      const householdRef = doc(db, "households", state.householdId);
+      await updateDoc(doc(householdRef, "users", user.id), { active: false });
     });
     memberList.appendChild(card);
   }
 
   const choreEditList = $("choreEditList");
   choreEditList.innerHTML = "";
-  for (const chore of data.chores) {
+  for (const chore of state.chores) {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
       <div class="chore-meta">
-        <div class="chore-title">${chore.emoji || "✨"} ${chore.title}</div>
+        <div class="chore-title">${chore.title}</div>
         <div class="point-pill">${chore.points} pts</div>
       </div>
-      <div class="cooldown">Cooldown: ${formatCooldownMinutes(chore.cooldownMinutes)}</div>
       <div class="row">
-        <button class="btn" data-edit="${chore.id}">Edit</button>
+        <input data-title value="${chore.title}" />
+        <input data-points type="number" min="1" value="${chore.points}" />
+        <input data-cooldown value="${formatCooldownMinutes(chore.cooldownMinutes)}" />
+        <select data-emoji></select>
+      </div>
+      <div class="row">
+        <button class="btn" data-save="${chore.id}">Save</button>
         <button class="btn" data-toggle="${chore.id}">${chore.active ? "Disable" : "Enable"}</button>
       </div>
     `;
-    card.querySelector("[data-edit]").addEventListener("click", () => editChore(chore.id));
-    card.querySelector("[data-toggle]").addEventListener("click", () => {
-      chore.active = !chore.active;
-      saveData(data);
-      render();
+    const emojiSelect = card.querySelector("[data-emoji]");
+    CLEANING_EMOJIS.forEach((emoji) => {
+      const option = document.createElement("option");
+      option.value = emoji;
+      option.textContent = emoji;
+      if (emoji === chore.emoji) option.selected = true;
+      emojiSelect.appendChild(option);
     });
+
+    card.querySelector("[data-save]").addEventListener("click", async () => {
+      const title = card.querySelector("[data-title]").value.trim();
+      const points = Number(card.querySelector("[data-points]").value.trim());
+      const cooldown = parseCooldown(card.querySelector("[data-cooldown]").value.trim());
+      const emoji = card.querySelector("[data-emoji]").value;
+      if (!title || Number.isNaN(points) || !cooldown) {
+        alert("Please provide a title, points, and cooldown like 2h or 5d.");
+        return;
+      }
+      const householdRef = doc(db, "households", state.householdId);
+      await updateDoc(doc(householdRef, "chores", chore.id), {
+        title,
+        points,
+        cooldownMinutes: cooldown,
+        emoji,
+      });
+    });
+
+    card.querySelector("[data-toggle]").addEventListener("click", async () => {
+      const householdRef = doc(db, "households", state.householdId);
+      await updateDoc(doc(householdRef, "chores", chore.id), { active: !chore.active });
+    });
+
     choreEditList.appendChild(card);
   }
 }
 
-function editChore(choreId) {
-  const data = loadData();
-  const chore = data.chores.find((c) => c.id === choreId);
-  if (!chore) return;
-  const title = prompt("Chore title", chore.title);
-  if (!title) return;
-  const points = Number(prompt("Points", chore.points));
-  const cooldown = prompt("Cooldown (e.g. 2h, 5d)", formatCooldownMinutes(chore.cooldownMinutes));
-  const cooldownMinutes = parseCooldown(cooldown);
-  if (!cooldownMinutes || Number.isNaN(points)) {
-    alert("Invalid points or cooldown.");
-    return;
-  }
-  chore.title = title;
-  chore.points = points;
-  chore.cooldownMinutes = cooldownMinutes;
-  saveData(data);
-  render();
+function renderQrCode(joinCode) {
+  const qrContainer = $("qrCode");
+  if (!qrContainer) return;
+  qrContainer.innerHTML = "";
+  if (!joinCode || typeof QRCode === "undefined") return;
+  new QRCode(qrContainer, {
+    text: joinCode,
+    width: 160,
+    height: 160,
+    colorDark: "#0f8b9d",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M,
+  });
 }
 
 function setupEvents() {
-  $("createHouseholdBtn").addEventListener("click", () => {
-    const data = createHousehold({
+  populateEmojiSelects();
+
+  $("createHouseholdBtn").addEventListener("click", async () => {
+    await createHousehold({
       name: $("createHouseholdName").value.trim(),
       userName: $("createUserName").value.trim(),
-      userEmoji: $("createUserEmoji").value.trim(),
+      userEmoji: $("createUserEmoji").value,
     });
-    render();
   });
 
-  $("joinHouseholdBtn").addEventListener("click", () => {
-    const data = joinHousehold({
+  $("joinHouseholdBtn").addEventListener("click", async () => {
+    await joinHousehold({
       joinCode: $("joinCode").value.trim(),
       userName: $("joinUserName").value.trim(),
-      userEmoji: $("joinUserEmoji").value.trim(),
+      userEmoji: $("joinUserEmoji").value,
     });
-    if (data) render();
   });
 
-  $("saveHouseholdBtn").addEventListener("click", () => {
-    const data = loadData();
-    data.household.name = $("editHouseholdName").value.trim() || data.household.name;
-    saveData(data);
-    render();
+  $("saveHouseholdBtn").addEventListener("click", async () => {
+    if (!state.householdId) return;
+    const householdRef = doc(db, "households", state.householdId);
+    await updateDoc(householdRef, {
+      name: $("editHouseholdName").value.trim() || state.household.name,
+    });
   });
 
-  $("addMemberBtn").addEventListener("click", () => {
-    const data = loadData();
+  $("copyJoinCodeBtn").addEventListener("click", async () => {
+    if (!state.householdId) return;
+    try {
+      await navigator.clipboard.writeText(state.householdId);
+      alert("Join code copied.");
+    } catch {
+      alert(`Join code: ${state.householdId}`);
+    }
+  });
+
+  $("addMemberBtn").addEventListener("click", async () => {
+    if (!state.householdId) return;
     const name = $("newMemberName").value.trim();
     if (!name) return;
-    data.users.push({
-      id: cryptoRandomId(),
+    const householdRef = doc(db, "households", state.householdId);
+    const userId = cryptoRandomId();
+    await setDoc(doc(householdRef, "users", userId), {
       name,
-      emoji: $("newMemberEmoji").value.trim() || "✨",
-      joinedAt: Date.now(),
+      emoji: $("newMemberEmoji").value || "✨",
+      joinedAt: serverTimestamp(),
+      authUid: null,
+      active: true,
     });
     $("newMemberName").value = "";
-    $("newMemberEmoji").value = "";
-    saveData(data);
-    render();
   });
 
-  $("addChoreBtn").addEventListener("click", () => {
-    const data = loadData();
+  $("addChoreBtn").addEventListener("click", async () => {
+    if (!state.householdId) return;
     const title = $("newChoreTitle").value.trim();
     const points = Number($("newChorePoints").value.trim());
     const cooldown = parseCooldown($("newChoreCooldown").value.trim());
@@ -522,25 +825,22 @@ function setupEvents() {
       alert("Please provide a title, points, and cooldown like 2h or 5d.");
       return;
     }
-    data.chores.push({
-      id: cryptoRandomId(),
+    const householdRef = doc(db, "households", state.householdId);
+    await setDoc(doc(householdRef, "chores", cryptoRandomId()), {
       title,
       points,
       cooldownMinutes: cooldown,
-      emoji: "✨",
+      emoji: $("newChoreEmoji").value || "✨",
       active: true,
     });
     $("newChoreTitle").value = "";
     $("newChorePoints").value = "";
     $("newChoreCooldown").value = "";
-    saveData(data);
-    render();
   });
 
   $("userSelect").addEventListener("change", (event) => {
-    const data = loadData();
-    data.currentUserId = event.target.value;
-    saveData(data);
+    state.currentUserId = event.target.value;
+    setLocalHousehold(state.householdId, state.currentUserId);
     render();
   });
 
@@ -556,5 +856,22 @@ function setupEvents() {
 }
 
 setupEvents();
-render();
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  state.uid = user.uid;
+  const stored = getLocalHousehold();
+  if (stored?.householdId) {
+    state.currentUserId = stored.currentUserId || null;
+    await subscribeToHousehold(stored.householdId);
+  } else {
+    render();
+  }
+});
+
+signInAnonymously(auth).catch((error) => {
+  console.error("Anonymous auth failed", error);
+  alert("Sign-in failed. Check Firebase Auth settings.");
+});
+
 setInterval(render, 60000);

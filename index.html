@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dishwasher v0.2</title>
+    <title>Dishwasher v0.21</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -18,7 +24,7 @@
         <div class="logo">🍽️</div>
         <div>
           <div class="title">Dishwasher</div>
-          <div class="subtitle">v0.2 · Chore League</div>
+          <div class="subtitle">v0.21 · Chore League</div>
         </div>
       </div>
       <div class="household-chip" id="householdChip">No household</div>
@@ -43,7 +49,7 @@
             </label>
             <label class="field">
               <span>Emoji</span>
-              <input id="createUserEmoji" placeholder="🧼" />
+              <select id="createUserEmoji"></select>
             </label>
             <button id="createHouseholdBtn" class="btn primary">Create household</button>
             <div class="hint">Timezone: Irish Standard Time (IST)</div>
@@ -68,7 +74,7 @@
             </label>
             <label class="field">
               <span>Emoji</span>
-              <input id="joinUserEmoji" placeholder="🧹" />
+              <select id="joinUserEmoji"></select>
             </label>
             <button id="joinHouseholdBtn" class="btn">Join household</button>
           </div>
@@ -116,8 +122,12 @@
               <span>Household name</span>
               <input id="editHouseholdName" />
             </label>
-            <button id="saveHouseholdBtn" class="btn">Save</button>
+            <div class="row">
+              <button id="saveHouseholdBtn" class="btn">Save</button>
+              <button id="copyJoinCodeBtn" class="btn">Copy join code</button>
+            </div>
             <div class="hint">Join code: <span id="joinCodeDisplay"></span></div>
+            <div id="qrCode" class="qr-share"></div>
           </div>
 
           <div class="section-title">Members</div>
@@ -125,7 +135,7 @@
           <div class="card">
             <div class="row">
               <input id="newMemberName" placeholder="Name" />
-              <input id="newMemberEmoji" placeholder="Emoji" />
+              <select id="newMemberEmoji"></select>
             </div>
             <button id="addMemberBtn" class="btn">Add member</button>
           </div>
@@ -137,6 +147,7 @@
               <input id="newChoreTitle" placeholder="Chore title" />
               <input id="newChorePoints" type="number" min="1" placeholder="Points" />
               <input id="newChoreCooldown" placeholder="Cooldown (e.g. 2h, 5d)" />
+              <select id="newChoreEmoji"></select>
             </div>
             <button id="addChoreBtn" class="btn">Add chore</button>
           </div>
@@ -145,9 +156,10 @@
     </main>
 
     <footer class="footer">
-      <div>Dishwasher v0.2 · IST weekly reset Monday 5:00 AM</div>
+      <div>Dishwasher v0.21 · IST weekly reset Monday 5:00 AM</div>
     </footer>
 
-    <script src="app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

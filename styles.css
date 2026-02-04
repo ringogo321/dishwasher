@@ -1,13 +1,13 @@
 :root {
-  --bg: #f7f4ef;
-  --ink: #2a2a2a;
-  --muted: #6b6b6b;
-  --primary: #0e5c66;
-  --accent: #ff9b42;
-  --sage: #7fb285;
-  --card: #ffffffcc;
-  --stroke: #e6e1da;
-  --shadow: 0 10px 30px rgba(14, 92, 102, 0.12);
+  --bg: #fff4ea;
+  --ink: #1f1f1f;
+  --muted: #5e5e5e;
+  --primary: #0f8b9d;
+  --accent: #ff7a59;
+  --sage: #3bc6a0;
+  --card: #ffffffd8;
+  --stroke: #eadfd4;
+  --shadow: 0 12px 34px rgba(15, 139, 157, 0.16);
   --radius: 18px;
 }
 
@@ -41,13 +41,13 @@ body {
 }
 
 .blob-a {
-  background: #ffd7a8;
+  background: #ffcf99;
   top: -200px;
   right: -120px;
 }
 
 .blob-b {
-  background: #b6e1dc;
+  background: #9fe6ff;
   bottom: -240px;
   left: -140px;
 }
@@ -183,6 +183,16 @@ body {
   font-size: 14px;
 }
 
+.field select,
+.row select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  background: #fff;
+}
+
 .btn {
   padding: 10px 14px;
   border-radius: 10px;
@@ -232,6 +242,17 @@ body {
   display: grid;
   place-items: center;
   font-weight: 600;
+}
+
+.qr-share {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--stroke);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .qr-title {
@@ -350,6 +371,49 @@ body {
   justify-content: space-between;
   align-items: center;
   font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+.league-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.progress-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #f0e3d8;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--sage), var(--primary));
+  width: 0%;
+  transition: width 0.5s ease;
+  animation: pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+  100% {
+    filter: brightness(1);
+  }
 }
 
 .hidden {
