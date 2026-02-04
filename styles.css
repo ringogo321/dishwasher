@@ -1,13 +1,13 @@
 :root {
-  --bg: #fff4ea;
-  --ink: #1f1f1f;
-  --muted: #5e5e5e;
-  --primary: #0f8b9d;
-  --accent: #ff7a59;
-  --sage: #3bc6a0;
-  --card: #ffffffd8;
-  --stroke: #eadfd4;
-  --shadow: 0 12px 34px rgba(15, 139, 157, 0.16);
+  --bg: #fff1dc;
+  --ink: #151515;
+  --muted: #4f4f4f;
+  --primary: #00a7c5;
+  --accent: #ff6b3d;
+  --sage: #00d4a1;
+  --card: #ffffffea;
+  --stroke: #f1d6c2;
+  --shadow: 0 14px 38px rgba(0, 167, 197, 0.2);
   --radius: 18px;
 }
 
@@ -41,13 +41,13 @@ body {
 }
 
 .blob-a {
-  background: #ffcf99;
+  background: #ffc56b;
   top: -200px;
   right: -120px;
 }
 
 .blob-b {
-  background: #9fe6ff;
+  background: #7fe1ff;
   bottom: -240px;
   left: -140px;
 }
@@ -58,7 +58,7 @@ body {
   background-image: linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
-  opacity: 0.3;
+  opacity: 0.25;
 }
 
 .topbar {
