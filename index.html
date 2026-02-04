@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dishwasher v0.2</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg">
+      <div class="blob blob-a"></div>
+      <div class="blob blob-b"></div>
+      <div class="grid"></div>
+    </div>
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">🍽️</div>
+        <div>
+          <div class="title">Dishwasher</div>
+          <div class="subtitle">v0.2 · Chore League</div>
+        </div>
+      </div>
+      <div class="household-chip" id="householdChip">No household</div>
+    </header>
+
+    <main class="shell">
+      <section id="landing" class="panel">
+        <div class="panel-header">
+          <h1>Welcome home</h1>
+          <p>Create a household or join with a QR code.</p>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <h2>Create household</h2>
+            <label class="field">
+              <span>Household name</span>
+              <input id="createHouseholdName" placeholder="The O'Briens" />
+            </label>
+            <label class="field">
+              <span>Your name</span>
+              <input id="createUserName" placeholder="Aoife" />
+            </label>
+            <label class="field">
+              <span>Emoji</span>
+              <input id="createUserEmoji" placeholder="🧼" />
+            </label>
+            <button id="createHouseholdBtn" class="btn primary">Create household</button>
+            <div class="hint">Timezone: Irish Standard Time (IST)</div>
+          </div>
+
+          <div class="card">
+            <h2>Join household</h2>
+            <div class="qr">
+              <div class="qr-box">QR</div>
+              <div>
+                <div class="qr-title">Scan QR to join</div>
+                <div class="qr-sub">No scanner in this prototype — paste the join code.</div>
+              </div>
+            </div>
+            <label class="field">
+              <span>Join code</span>
+              <input id="joinCode" placeholder="ABCD-1234" />
+            </label>
+            <label class="field">
+              <span>Your name</span>
+              <input id="joinUserName" placeholder="Cormac" />
+            </label>
+            <label class="field">
+              <span>Emoji</span>
+              <input id="joinUserEmoji" placeholder="🧹" />
+            </label>
+            <button id="joinHouseholdBtn" class="btn">Join household</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="app" class="panel hidden">
+        <div class="panel-header">
+          <h1 id="householdName">Household</h1>
+          <p id="weekMeta">Weekly league resets Monday 5:00 AM IST.</p>
+          <div class="user-select">
+            <span>Logging as</span>
+            <select id="userSelect"></select>
+          </div>
+        </div>
+
+        <nav class="tabs">
+          <button class="tab active" data-tab="home">Today</button>
+          <button class="tab" data-tab="league">League</button>
+          <button class="tab" data-tab="badges">Badges</button>
+          <button class="tab" data-tab="edit">Edit</button>
+        </nav>
+
+        <section class="tab-panel active" id="tab-home">
+          <div class="section-title">Chores</div>
+          <div id="choreList" class="cards"></div>
+        </section>
+
+        <section class="tab-panel" id="tab-league">
+          <div class="section-title">Weekly league</div>
+          <div id="weeklyLeague" class="cards"></div>
+          <div class="section-title">Yearly league (calendar year)</div>
+          <div id="yearlyLeague" class="cards"></div>
+        </section>
+
+        <section class="tab-panel" id="tab-badges">
+          <div class="section-title">Awards cabinet</div>
+          <div id="badgesGrid" class="cards"></div>
+        </section>
+
+        <section class="tab-panel" id="tab-edit">
+          <div class="section-title">Household</div>
+          <div class="card">
+            <label class="field">
+              <span>Household name</span>
+              <input id="editHouseholdName" />
+            </label>
+            <button id="saveHouseholdBtn" class="btn">Save</button>
+            <div class="hint">Join code: <span id="joinCodeDisplay"></span></div>
+          </div>
+
+          <div class="section-title">Members</div>
+          <div id="memberList" class="cards"></div>
+          <div class="card">
+            <div class="row">
+              <input id="newMemberName" placeholder="Name" />
+              <input id="newMemberEmoji" placeholder="Emoji" />
+            </div>
+            <button id="addMemberBtn" class="btn">Add member</button>
+          </div>
+
+          <div class="section-title">Chores</div>
+          <div id="choreEditList" class="cards"></div>
+          <div class="card">
+            <div class="row">
+              <input id="newChoreTitle" placeholder="Chore title" />
+              <input id="newChorePoints" type="number" min="1" placeholder="Points" />
+              <input id="newChoreCooldown" placeholder="Cooldown (e.g. 2h, 5d)" />
+            </div>
+            <button id="addChoreBtn" class="btn">Add chore</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div>Dishwasher v0.2 · IST weekly reset Monday 5:00 AM</div>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

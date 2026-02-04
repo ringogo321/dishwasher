@@ -1,0 +1,369 @@
+:root {
+  --bg: #f7f4ef;
+  --ink: #2a2a2a;
+  --muted: #6b6b6b;
+  --primary: #0e5c66;
+  --accent: #ff9b42;
+  --sage: #7fb285;
+  --card: #ffffffcc;
+  --stroke: #e6e1da;
+  --shadow: 0 10px 30px rgba(14, 92, 102, 0.12);
+  --radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Fraunces", "Georgia", "Times New Roman", serif;
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100vh;
+  position: relative;
+}
+
+.bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.blob {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.45;
+}
+
+.blob-a {
+  background: #ffd7a8;
+  top: -200px;
+  right: -120px;
+}
+
+.blob-b {
+  background: #b6e1dc;
+  bottom: -240px;
+  left: -140px;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.3;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px 10px;
+}
+
+.brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  box-shadow: var(--shadow);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+.household-chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--stroke);
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+}
+
+.shell {
+  padding: 10px 28px 60px;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 26px;
+  backdrop-filter: blur(8px);
+}
+
+.panel-header h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.panel-header p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+.user-select {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.user-select select {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: #fff;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+}
+
+.field input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+}
+
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: #1c1c1c;
+}
+
+.btn:disabled {
+  background: #d7d2ca;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+.qr {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.qr-box {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  background: repeating-linear-gradient(45deg, #d6d1ca, #d6d1ca 6px, #fff 6px, #fff 12px);
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+}
+
+.qr-title {
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+}
+
+.qr-sub {
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.tab {
+  border: 1px solid var(--stroke);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.section-title {
+  font-size: 16px;
+  margin: 10px 0 12px;
+}
+
+.cards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.chore-card {
+  display: grid;
+  gap: 8px;
+}
+
+.chore-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chore-title {
+  font-size: 16px;
+}
+
+.point-pill {
+  background: var(--accent);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 12px;
+}
+
+.cooldown {
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.footer {
+  padding: 22px 28px 40px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.badge {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.badge-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fff2dd;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.league-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .shell {
+    padding: 8px 18px 60px;
+  }
+}
