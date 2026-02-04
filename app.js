@@ -1063,9 +1063,9 @@ async function readHouseholdPhoto(inputEl) {
   if (!inputEl || !inputEl.files || inputEl.files.length === 0) return null;
   const file = inputEl.files[0];
   if (!file.type.startsWith("image/")) return null;
-  const maxBytes = 350 * 1024;
+  const maxBytes = 1047552;
   if (file.size > maxBytes) {
-    alert("Please choose an image under 350KB.");
+    alert("Please choose an image under 1,047,552 bytes (1KB under Firestore max).");
     return null;
   }
   return new Promise((resolve, reject) => {

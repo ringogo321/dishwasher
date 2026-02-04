@@ -184,6 +184,7 @@ body {
   margin-bottom: 12px;
   font-family: "Inter", "Helvetica Neue", sans-serif;
   font-size: 13px;
+  min-width: 0;
 }
 
 .field.checkbox {
@@ -200,6 +201,12 @@ body {
   border: 1px solid var(--stroke);
   font-family: "Inter", "Helvetica Neue", sans-serif;
   font-size: 14px;
+}
+
+.field input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  padding: 8px;
 }
 
 .field select,
