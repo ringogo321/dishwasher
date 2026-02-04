@@ -5,8 +5,10 @@ import {
   doc,
   setDoc,
   getDoc,
+  getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -20,6 +22,8 @@ const STORAGE_KEY = "dishwasher.v0.21";
 const TIME_ZONE = "Europe/Dublin";
 const DAILY_GOAL = 5;
 const WEEKLY_GOAL = 35;
+const INACTIVITY_DAYS = 30;
+const INACTIVITY_MS = INACTIVITY_DAYS * 24 * 60 * 60 * 1000;
 
 const CATEGORIES = [
   "Bathroom",
@@ -259,6 +263,45 @@ function normalizeChore(chore) {
   };
 }
 
+async function touchHousehold(householdRef) {
+  try {
+    await updateDoc(householdRef, { lastActivity: serverTimestamp() });
+  } catch {
+    // Ignore if missing permissions or household removed.
+  }
+}
+
+async function deleteHouseholdIfInactive(householdRef, householdData) {
+  const lastActivity = toDate(householdData?.lastActivity || householdData?.createdAt);
+  if (!lastActivity) return false;
+  if (Date.now() - lastActivity.getTime() < INACTIVITY_MS) return false;
+  await deleteHousehold(householdRef);
+  clearLocalHousehold();
+  resetSubscriptions();
+  setState({ householdId: null, household: null, users: [], chores: [], logs: [], currentUserId: null });
+  alert("Household removed due to 30 days of inactivity.");
+  render();
+  return true;
+}
+
+async function deleteHouseholdIfEmpty(householdRef) {
+  const usersSnap = await getDocs(collection(householdRef, "users"));
+  const activeUsers = usersSnap.docs.filter((docSnap) => docSnap.data().active !== false);
+  if (activeUsers.length > 0) return;
+  await deleteHousehold(householdRef);
+}
+
+async function deleteHousehold(householdRef) {
+  const collections = ["users", "chores", "logs"];
+  for (const col of collections) {
+    const snap = await getDocs(collection(householdRef, col));
+    for (const docSnap of snap.docs) {
+      await deleteDoc(docSnap.ref);
+    }
+  }
+  await deleteDoc(householdRef);
+}
+
 function guessCategory(title = "") {
   const text = title.toLowerCase();
   if (text.includes("bathroom")) return "Bathroom";
@@ -489,7 +532,10 @@ async function subscribeToHousehold(householdId) {
     return;
   }
 
-  setState({ householdId, household: { id: householdId, ...householdSnap.data() } });
+  const householdData = householdSnap.data();
+  if (await deleteHouseholdIfInactive(householdRef, householdData)) return;
+
+  setState({ householdId, household: { id: householdId, ...householdData } });
 
   state.unsubscribers.push(
     onSnapshot(collection(householdRef, "users"), (snapshot) => {
@@ -533,6 +579,7 @@ async function createHousehold({ name, userName, userEmoji }) {
     name: name || "Household",
     timezone: TIME_ZONE,
     createdAt: serverTimestamp(),
+    lastActivity: serverTimestamp(),
   });
 
   const userId = cryptoRandomId();
@@ -554,6 +601,8 @@ async function createHousehold({ name, userName, userEmoji }) {
       .map((child) => child.id);
     await updateDoc(doc(householdRef, "chores", chore.id), { includes });
   }
+
+  await touchHousehold(householdRef);
 
   setState({ currentUserId: userId });
   setLocalHousehold(householdId, userId);
@@ -577,6 +626,8 @@ async function joinHousehold({ joinCode, userName, userEmoji }) {
     active: true,
   });
 
+  await touchHousehold(householdRef);
+
   setState({ currentUserId: userId });
   setLocalHousehold(joinCode, userId);
   await subscribeToHousehold(joinCode);
@@ -584,6 +635,7 @@ async function joinHousehold({ joinCode, userName, userEmoji }) {
 
 async function logChore(chore) {
   const householdRef = doc(db, "households", state.householdId);
+  await touchHousehold(householdRef);
   await addDoc(collection(householdRef, "logs"), {
     userId: state.currentUserId,
     choreId: chore.id,
@@ -852,6 +904,7 @@ function render() {
       if (!name) return;
       const householdRef = doc(db, "households", state.householdId);
       await updateDoc(doc(householdRef, "users", user.id), { name, emoji });
+      await touchHousehold(householdRef);
       if (state.currentUserId === user.id) {
         setLocalHousehold(state.householdId, state.currentUserId);
       }
@@ -860,6 +913,8 @@ function render() {
       if (state.users.length === 1) return alert("At least one member required.");
       const householdRef = doc(db, "households", state.householdId);
       await updateDoc(doc(householdRef, "users", user.id), { active: false });
+      await touchHousehold(householdRef);
+      await deleteHouseholdIfEmpty(householdRef);
     });
     memberList.appendChild(card);
   }
@@ -957,11 +1012,13 @@ function render() {
         isBundle,
         includes,
       });
+      await touchHousehold(householdRef);
     });
 
     card.querySelector("[data-toggle]").addEventListener("click", async () => {
       const householdRef = doc(db, "households", state.householdId);
       await updateDoc(doc(householdRef, "chores", chore.id), { active: !chore.active });
+      await touchHousehold(householdRef);
     });
 
     choreEditList.appendChild(card);
@@ -978,7 +1035,7 @@ function renderQrCode(joinCode) {
     text: joinUrl,
     width: 160,
     height: 160,
-    colorDark: "#0f8b9d",
+    colorDark: "#ff8a1f",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.M,
   });
@@ -1010,6 +1067,7 @@ function setupEvents() {
     const householdRef = doc(db, "households", state.householdId);
     await updateDoc(householdRef, {
       name: $("editHouseholdName").value.trim() || state.household.name,
+      lastActivity: serverTimestamp(),
     });
   });
 
@@ -1021,6 +1079,19 @@ function setupEvents() {
     } catch {
       alert(`Join code: ${state.householdId}`);
     }
+  });
+
+  $("leaveHouseholdBtn").addEventListener("click", async () => {
+    if (!state.householdId || !state.currentUserId) return;
+    if (!confirm("Leave this household?")) return;
+    const householdRef = doc(db, "households", state.householdId);
+    await updateDoc(doc(householdRef, "users", state.currentUserId), { active: false });
+    await touchHousehold(householdRef);
+    await deleteHouseholdIfEmpty(householdRef);
+    clearLocalHousehold();
+    resetSubscriptions();
+    setState({ householdId: null, household: null, users: [], chores: [], logs: [], currentUserId: null });
+    render();
   });
 
   $("addMemberBtn").addEventListener("click", async () => {
@@ -1036,6 +1107,7 @@ function setupEvents() {
       authUid: null,
       active: true,
     });
+    await touchHousehold(householdRef);
     $("newMemberName").value = "";
   });
 
@@ -1061,6 +1133,7 @@ function setupEvents() {
       includes: [],
       active: true,
     });
+    await touchHousehold(householdRef);
     $("newChoreTitle").value = "";
     $("newChorePoints").value = "";
     $("newChoreCooldown").value = "";
